@@ -7,7 +7,9 @@
     "start": "node .",
     "dev": "tsx src/index.ts",
     "lint": "eslint",
-    "build": "tsc"
+    "build": "tsc",
+    "migrate:generate": "drizzle-kit generate",
+    "migrate:apply": "drizzle-kit migrate"
   },
   "keywords": [],
   "author": "Борисов Максим <maborisov@sfedu.ru>",
