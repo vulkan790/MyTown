@@ -5,6 +5,7 @@ import fastifyEnv from '@fastify/env';
 
 import { EnvironmentSchema } from './schema';
 import { setupDrizzle } from './db';
+import { registerJwt } from './auth/jwt';
 
 const registerEnv = async (fastify: FastifyInstance) => {
   await fastify.register(fastifyEnv, {
@@ -23,6 +24,7 @@ const main = async () => {
 
   await registerEnv(fastify);
   registerDrizzle(fastify);
+  registerJwt(fastify);
 
   // register controllers
   fastify.get('/', () => 'Hello world');
