@@ -6,6 +6,6 @@ import { Drizzle } from '../db';
 declare module 'fastify' {
   interface FastifyInstance {
     drizzle: Drizzle;
-    config: Static<EnvironmentSchema>;
+    config: Static<typeof EnvironmentSchema>;
   }
 }
