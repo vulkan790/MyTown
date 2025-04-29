@@ -32,9 +32,6 @@ export const registerSchema = {
   body: registerBody,
   response: {
     200: registerResponse,
-    400: Type.Object({
-      error: registerErrors,
-    }),
   },
 } satisfies FastifySchema;
 
