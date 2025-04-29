@@ -1,12 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import { fastifyBcrypt } from 'fastify-bcrypt';
 
-import { ok, err, type Result } from 'neverthrow';
+import { ok, err, fromPromise, type Result } from 'neverthrow';
 
 import { eq } from 'drizzle-orm';
 import { users } from '../db/schema';
 
 import {
+  LoginErrors,
   RegisterBody,
   RegisterErrors,
 } from './schemas';
@@ -63,7 +64,45 @@ export const reigsterAuthService = async (fastify: FastifyInstance) => {
     return registerResult;
   };
 
-  const login = async (email: string, password: string) => {};
+  const login = async (email: string, password: string): Promise<Result<string, LoginErrors | 'unknown_error'>> => {
+    const userSelect = drizzle.select({
+      id: users.id,
+      email: users.email,
+      password: users.password,
+      role: users.role,
+    })
+      .from(users)
+      .where(eq(users.email, email))
+      .then((users) => users.at(0));
+
+    const userResult = await fromPromise(
+      userSelect,
+      (e) => e
+    );
+
+    if (userResult.isErr()) {
+      console.error('Error while selecting user', userResult.error);
+      return err('unknown_error');
+    }
+
+    const user = userResult.value;
+    if (!user) {
+      return err('invalid_credentials');
+    }
+
+    const passwordMatch = await fastify.bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return err('invalid_credentials');
+    }
+
+    const token = fastify.jwtHelpers.sign({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return ok(token);
+  };
 
   fastify.decorate('authService', {
     register,
@@ -75,7 +114,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     authService: {
       register: (registerPayload: RegisterBody) => Promise<Result<string, RegisterErrors | 'unknown_error'>>;
-      login: (email: string, password: string) => Promise<unknown>;
+      login: (email: string, password: string) => Promise<Result<string, LoginErrors | 'unknown_error'>>;
     };
   }
 }
