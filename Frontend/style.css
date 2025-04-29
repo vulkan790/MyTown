@@ -131,7 +131,7 @@ body {
 
 /* main */
 
-.first {
+.first__first {
   display: flex;
   justify-content: space-between;
   height: 600px;
@@ -184,7 +184,7 @@ body {
 
 /* 1st page > 2nd block*/
 
-.second {
+.first__ second {
   height: 810px;
   margin-bottom: 115px;
 }
@@ -219,11 +219,11 @@ body {
 
 .group__title {
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 700px;
   padding-bottom: 10px;
 }
 .description {
-  font-weight: 400;
+  font-weight: 400px;
   line-height: 30px;
   padding-bottom: 15px;
 }
@@ -251,6 +251,8 @@ body {
   align-items: center;
   gap: 30px;
 }
+.group__statusbar-status-item {
+}
 .group__img {
   border-radius: 0 15px 15px 0;
 }
@@ -266,7 +268,7 @@ body {
   width: 1100px;
   background-color: #3786BE;
   border-radius: 15px;
-  margin: 0 auto;
+  margin: 50px auto ;
 }
 
 /* 2nd page >1st block */
@@ -292,10 +294,18 @@ body {
   border-radius: 15px;
   
   margin: 0 auto;
-  margin-top: 80px;
+  margin-top: 50px;
+  margin-bottom: 100px;
 }
 
-.all__problems-list-item + .all__problems-list-item {
-  margin-top: 80px;
-  padding-bottom: 30px;
+.button__txt:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  opacity: 0.9;
 }
+
+.all__problems-list {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+
