@@ -131,7 +131,7 @@ body {
 
 /* main */
 
-.first__first {
+.first {
   display: flex;
   justify-content: space-between;
   height: 600px;
@@ -184,7 +184,7 @@ body {
 
 /* 1st page > 2nd block*/
 
-.first__ second {
+.first__second {
   height: 810px;
   margin-bottom: 115px;
 }
