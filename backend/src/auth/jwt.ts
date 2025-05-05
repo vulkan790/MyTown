@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { fastifyJwt } from '@fastify/jwt';
 
 export type JwtPayload = {
@@ -19,13 +19,19 @@ export const registerJwt = (fastify: FastifyInstance) => {
     return token;
   };
 
-  const verify = (token: string) => {
-    return false;
+  const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify<JwtPayload>();
+    } catch {
+      await reply.status(401).send({
+        message: 'Unauthorized',
+      });
+    }
   };
 
   fastify.decorate('jwtHelpers', {
     sign,
-    verify,
+    authenticate,
   });
 };
 
@@ -33,7 +39,13 @@ declare module 'fastify' {
   interface FastifyInstance {
     jwtHelpers: {
       sign: (payload: JwtPayload) => string;
-      verify: (token: string) => boolean;
+      authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     };
+  }
+}
+
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    user: JwtPayload;
   }
 }
