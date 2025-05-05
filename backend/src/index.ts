@@ -8,6 +8,7 @@ import { setupDrizzle } from './db';
 import { registerJwt } from './auth/jwt';
 
 import { AuthController } from './auth';
+import { UsersController } from './users';
 
 const registerEnv = async (fastify: FastifyInstance) => {
   await fastify.register(fastifyEnv, {
@@ -31,6 +32,9 @@ const main = async () => {
   // register controllers
   await fastify.register(AuthController, {
     prefix: '/api/auth',
+  });
+  await fastify.register(UsersController, {
+    prefix: '/api/users',
   });
 
   await fastify.ready();
