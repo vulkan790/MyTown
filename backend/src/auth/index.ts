@@ -1,0 +1,65 @@
+import { FastifyInstance } from 'fastify';
+import { FastifyReplyTypeBox, FastifyRequestTypeBox, FastifyTypebox } from '../types/typebox';
+
+import { reigsterAuthService } from './service';
+import * as schemas from './schemas';
+
+export async function AuthController (fastify: FastifyTypebox) {
+  await reigsterAuthService(fastify);
+
+  fastify.post('/login', { schema: schemas.loginSchema }, loginEndpoint);
+  fastify.post('/register', { schema: schemas.registerSchema }, registerEndpoint);
+}
+
+async function registerEndpoint (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schemas.RegisterSchema>,
+  reply: FastifyReplyTypeBox<schemas.RegisterSchema>
+) {
+  const registrationResult = await this.authService.register(request.body);
+  if (registrationResult.isOk()) {
+    await reply.status(200).send({
+      accessToken: registrationResult.value,
+    });
+
+    return;
+  }
+
+  if (registrationResult.error === 'unknown_error') {
+    await reply.status(500).send();
+
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: registrationResult.error,
+  };
+}
+
+async function loginEndpoint (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schemas.LoginSchema>,
+  reply: FastifyReplyTypeBox<schemas.LoginSchema>
+) {
+  const loginResult = await this.authService.login(request.body.email, request.body.password);
+
+  if (loginResult.isOk()) {
+    await reply.status(200).send({
+      accessToken: loginResult.value,
+    });
+
+    return;
+  }
+
+  if (loginResult.error === 'unknown_error') {
+    await reply.status(500).send();
+
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: loginResult.error,
+  };
+}
