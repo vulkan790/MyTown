@@ -13,7 +13,10 @@ export const registerJwt = (fastify: FastifyInstance) => {
   });
 
   const sign = (payload: JwtPayload) => {
-    return '';
+    const token = fastify.jwt.sign(payload, {
+      expiresIn: '7d',
+    });
+    return token;
   };
 
   const verify = (token: string) => {
