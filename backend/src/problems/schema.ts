@@ -26,11 +26,11 @@ const Problem = Type.Object({
     firstName: Type.String(),
     avatarUrl: Type.String(),
   }),
+  createdAt: Type.String(),
 });
 
 const RichProblem = Type.Composite([Problem, Type.Object({
   comments: Type.Array(Comment),
-  createdAt: Type.String(),
 })]);
 
 // get problems

@@ -34,6 +34,7 @@ type Problem = {
     firstName: string;
     avatarUrl: string;
   };
+  createdAt: string;
 };
 
 type RichProblem = Problem & {
@@ -91,6 +92,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       status: problems.status,
       images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
       votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),
+      createdAt: problems.createdAt,
 
       author: {
         id: users.id,
@@ -124,6 +126,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     const problemsCount = problemsResult.value.at(0)?.total ?? 0;
     const problemsList = problemsResult.value.map((problem) => ({
       ...problem,
+
+      createdAt: problem.createdAt!.toISOString(),
       author: problem.author
         ? {
             ...problem.author,
