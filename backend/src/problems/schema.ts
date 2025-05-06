@@ -11,6 +11,7 @@ const Comment = Type.Object({
   }),
 
   content: Type.String(),
+  createdAt: Type.String(),
 });
 
 const Problem = Type.Object({
