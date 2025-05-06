@@ -150,6 +150,88 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     });
   };
 
+  const getHotProblems = async (limit: number = 10): Promise<Result<Problem[], 'unknown_error'>> => {
+    const votesCTE = drizzle.$with('aggregated_votes').as(
+      drizzle
+        .select({
+          votes: sum(problemVotes.vote)
+            .mapWith((n): number | null => Number(n))
+            .as('votes'),
+          problemId: problemVotes.problemId,
+        })
+        .from(problemVotes)
+        .groupBy(problemVotes.problemId)
+    );
+
+    const imagesCTE = drizzle.$with('aggregated_images').as(
+      drizzle
+        .select({
+          images: sql`JSON_ARRAYAGG(${problemImages.imageUrl})`
+            .mapWith((n): string[] | null => JSON.parse(n))
+            .as('images'),
+          problemId: problemImages.problemId,
+        })
+        .from(problemImages)
+        .groupBy(problemImages.problemId)
+    );
+
+    const problemsSelect = drizzle.with(votesCTE, imagesCTE).select({
+      id: problems.id,
+      title: problems.title,
+      description: problems.description,
+      address: problems.address,
+      status: problems.status,
+      images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
+      votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),
+      createdAt: problems.createdAt,
+      author: {
+        id: users.id,
+        firstName: users.firstName,
+        avatarUrl: users.avatarUrl,
+      },
+    })
+      .from(problems)
+      .leftJoin(votesCTE, eq(problems.id, votesCTE.problemId))
+      .leftJoin(imagesCTE, eq(problems.id, imagesCTE.problemId))
+      .leftJoin(users, eq(problems.userId, users.id))
+      .where(or(
+        eq(problems.status, PROBLEM_STATUS.WAIT_FOR_SOLVE),
+        eq(problems.status, PROBLEM_STATUS.SOLVING),
+        eq(problems.status, PROBLEM_STATUS.SOLVED)
+      ))
+      .orderBy(desc(votesCTE.votes))
+      .limit(limit);
+
+    const problemsResult = await fromPromise(
+      problemsSelect,
+      (e) => e
+    );
+
+    if (problemsResult.isErr()) {
+      console.error('Error during getting hot problems', problemsResult.error);
+      return err('unknown_error');
+    }
+
+    const problemsList = problemsResult.value.map((problem) => ({
+      ...problem,
+      createdAt: problem.createdAt!.toISOString(),
+      author: problem.author
+        ? {
+            ...problem.author,
+            avatarUrl: problem.author.avatarUrl
+              ? problem.author.avatarUrl
+              : '',
+          }
+        : {
+            id: -1,
+            firstName: 'Удалённый Пользователь',
+            avatarUrl: '',
+          },
+    }));
+
+    return ok(problemsList);
+  };
+
   const getProblem = async (
     id: number,
     user: JwtPayload | null
@@ -303,6 +385,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
 
   fastify.decorate('problemService', {
     getProblems,
+    getHotProblems,
     getProblem,
   });
 };
@@ -311,6 +394,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     problemService: {
       getProblems: (page: number, limit: number) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
+      getHotProblems: (limit?: number) => Promise<Result<Problem[], 'unknown_error'>>;
       getProblem: (id: number, user: JwtPayload | null) => Promise<Result<RichProblem, 'unknown_problem' | 'unknown_error'>>;
     };
   }

@@ -8,6 +8,7 @@ export async function ProblemsController (fastify: FastifyTypebox) {
   registerProblemsService(fastify);
 
   fastify.get('/', { schema: schema.getAllProblemsSchema }, getProblems);
+  fastify.get('/hot', { schema: schema.getHotProblemsSchema }, getHotProblems);
   fastify.get('/:id', {
     schema: schema.getProblemSchema,
     preHandler: fastify.jwtHelpers.tryAuthenticate,
@@ -50,6 +51,20 @@ async function getProblem (
 
   if (problemResult.error === 'unknown_problem') {
     await reply.status(404).send();
+    return;
+  }
+
+  await reply.status(500).send();
+}
+
+async function getHotProblems (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.GetHotProblemsSchema>,
+  reply: FastifyReplyTypeBox<schema.GetHotProblemsSchema>
+) {
+  const result = await this.problemService.getHotProblems();
+  if (result.isOk()) {
+    await reply.status(200).send(result.value);
     return;
   }
 

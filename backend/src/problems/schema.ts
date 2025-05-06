@@ -69,3 +69,14 @@ export const getProblemSchema = {
 } satisfies FastifySchema;
 
 export type GetProblemSchema = typeof getProblemSchema;
+
+// get hot problems
+const getHotProblemsResponse = Type.Array(Problem);
+
+export const getHotProblemsSchema = {
+  response: {
+    200: getHotProblemsResponse,
+  },
+} satisfies FastifySchema;
+
+export type GetHotProblemsSchema = typeof getHotProblemsSchema;
