@@ -29,9 +29,16 @@ export const registerJwt = (fastify: FastifyInstance) => {
     }
   };
 
+  const tryAuthenticate = async (request: FastifyRequest) => {
+    try {
+      await request.jwtVerify<JwtPayload>();
+    } catch {}
+  };
+
   fastify.decorate('jwtHelpers', {
     sign,
     authenticate,
+    tryAuthenticate,
   });
 };
 
@@ -40,6 +47,7 @@ declare module 'fastify' {
     jwtHelpers: {
       sign: (payload: JwtPayload) => string;
       authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+      tryAuthenticate: (request: FastifyRequest) => Promise<void>;
     };
   }
 }

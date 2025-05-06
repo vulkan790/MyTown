@@ -9,6 +9,7 @@ import { registerJwt } from './auth/jwt';
 
 import { AuthController } from './auth';
 import { UsersController } from './users';
+import { ProblemsController } from './problems';
 
 const registerEnv = async (fastify: FastifyInstance) => {
   await fastify.register(fastifyEnv, {
@@ -35,6 +36,9 @@ const main = async () => {
   });
   await fastify.register(UsersController, {
     prefix: '/api/users',
+  });
+  await fastify.register(ProblemsController, {
+    prefix: '/api/problems',
   });
 
   await fastify.ready();

@@ -1,0 +1,72 @@
+import { FastifyInstance } from 'fastify';
+import { FastifyReplyTypeBox, FastifyRequestTypeBox, FastifyTypebox } from '../types/typebox';
+
+import { registerProblemsService } from './service';
+import * as schema from './schema.js';
+
+export async function ProblemsController (fastify: FastifyTypebox) {
+  registerProblemsService(fastify);
+
+  fastify.get('/', { schema: schema.getAllProblemsSchema }, getProblems);
+  fastify.get('/hot', { schema: schema.getHotProblemsSchema }, getHotProblems);
+  fastify.get('/:id', {
+    schema: schema.getProblemSchema,
+    preHandler: fastify.jwtHelpers.tryAuthenticate,
+  }, getProblem);
+}
+
+async function getProblems (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.GetAllProblemsSchema>,
+  reply: FastifyReplyTypeBox<schema.GetAllProblemsSchema>
+) {
+  const { page, limit } = request.query;
+
+  const result = await this.problemService.getProblems(page, limit);
+  if (result.isOk()) {
+    await reply.status(200).send({
+      page: result.value.page,
+      total: result.value.total,
+      problems: result.value.problems,
+    });
+
+    return;
+  }
+
+  await reply.status(500).send();
+}
+
+async function getProblem (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.GetProblemSchema>,
+  reply: FastifyReplyTypeBox<schema.GetProblemSchema>
+) {
+  const { id } = request.params;
+
+  const problemResult = await this.problemService.getProblem(id, request.user);
+  if (problemResult.isOk()) {
+    await reply.status(200).send(problemResult.value);
+    return;
+  }
+
+  if (problemResult.error === 'unknown_problem') {
+    await reply.status(404).send();
+    return;
+  }
+
+  await reply.status(500).send();
+}
+
+async function getHotProblems (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.GetHotProblemsSchema>,
+  reply: FastifyReplyTypeBox<schema.GetHotProblemsSchema>
+) {
+  const result = await this.problemService.getHotProblems();
+  if (result.isOk()) {
+    await reply.status(200).send(result.value);
+    return;
+  }
+
+  await reply.status(500).send();
+}

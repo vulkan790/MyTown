@@ -46,6 +46,7 @@ query (всё, что идет после вопроса в конце URL), pat
       "images": ["https://host.com/uploads/image.jpg"],
       "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved"
       "votes": 123, // could be negative (?)
+      "createdAt": "2025-05-06T17:39:43.838Z", // date ISO string
       "author": {
         "id": 12,
         "firstName": "Кристина",
@@ -81,6 +82,7 @@ query (всё, что идет после вопроса в конце URL), pat
   "images": ["https://host.com/uploads/image.jpg"],
   "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved"
   "votes": 123, // could be negative (?)
+  "createdAt": "2025-05-06T17:39:43.838Z", // date ISO string
   "author": {
     "id": 12,
     "firstName": "Кристина",
@@ -96,7 +98,8 @@ query (всё, что идет после вопроса в конце URL), pat
         "middleName": "Отчество",
         "avatarUrl": "https://host.com/uploads/avatar.png"
       },
-      "content": "Господа граждане, работаем!"
+      "content": "Господа граждане, работаем!",
+      "createdAt": "2025-05-06T17:39:43.838Z", // date ISO string
     }
   ]
 }
@@ -129,6 +132,7 @@ query (всё, что идет после вопроса в конце URL), pat
     "images": ["https://host.com/uploads/image.jpg"],
     "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved"
     "votes": 123, // could be negative (?)
+    "createdAt": "2025-05-06T17:39:43.838Z", // date ISO string
     "author": {
       "id": 12,
       "firstName": "Кристина",
@@ -238,7 +242,8 @@ query (всё, что идет после вопроса в конце URL), pat
       "address": "ул. Пушкина, д. Колотушкина",
       "images": ["https://host.com/uploads/image.jpg"],
       "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved" | "rejected" | "on_moderation"
-      "votes": 123 // could be negative (?)
+      "votes": 123, // could be negative (?)
+      "createdAt": "2025-05-06T17:39:43.838Z", // date ISO string
     }
   ]
 }
