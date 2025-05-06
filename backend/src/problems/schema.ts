@@ -28,9 +28,9 @@ const Problem = Type.Object({
   }),
 });
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RichProblem = Type.Composite([Problem, Type.Object({
   comments: Type.Array(Comment),
+  createdAt: Type.String(),
 })]);
 
 // get problems
@@ -53,3 +53,18 @@ export const getAllProblemsSchema = {
 } satisfies FastifySchema;
 
 export type GetAllProblemsSchema = typeof getAllProblemsSchema;
+
+// get problem
+const getProblemParams = Type.Object({
+  id: Type.Integer(),
+});
+const getProblemResponse = RichProblem;
+
+export const getProblemSchema = {
+  params: getProblemParams,
+  response: {
+    200: getProblemResponse,
+  },
+} satisfies FastifySchema;
+
+export type GetProblemSchema = typeof getProblemSchema;

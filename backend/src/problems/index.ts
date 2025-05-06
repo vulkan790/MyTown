@@ -8,6 +8,10 @@ export async function ProblemsController (fastify: FastifyTypebox) {
   registerProblemsService(fastify);
 
   fastify.get('/', { schema: schema.getAllProblemsSchema }, getProblems);
+  fastify.get('/:id', {
+    schema: schema.getProblemSchema,
+    preHandler: fastify.jwtHelpers.tryAuthenticate,
+  }, getProblem);
 }
 
 async function getProblems (
@@ -25,6 +29,27 @@ async function getProblems (
       problems: result.value.problems,
     });
 
+    return;
+  }
+
+  await reply.status(500).send();
+}
+
+async function getProblem (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.GetProblemSchema>,
+  reply: FastifyReplyTypeBox<schema.GetProblemSchema>
+) {
+  const { id } = request.params;
+
+  const problemResult = await this.problemService.getProblem(id, request.user);
+  if (problemResult.isOk()) {
+    await reply.status(200).send(problemResult.value);
+    return;
+  }
+
+  if (problemResult.error === 'unknown_problem') {
+    await reply.status(404).send();
     return;
   }
 
