@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мой город</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <div class="container">
+        <div class="header__inner">
+          <a href="index-auth.html" class="logo">
+            <img src="images/logo.svg" alt="logo" class="logo__img">
+            <span class="logo-text">Мой Город</span>
+          </a>
+          <nav class="menu">
+            <ul class="menu__list">
+              <li class="menu__list-item">
+                <a href="profile-auth.html" class="menu__list-user">
+                  <img src="images/Profile.svg" alt="Вадим" class="user-avatar">
+                </a>
+              </li>
+              <li class="menu__list-item"><a class="menu__list-link">Вадим</a></li>
+              <li class="menu__list-item-btn-exit"><a href="index.html" class="menu__list-link-btn-exit">Выйти</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </header>
+    <main class="main">
+      <div class="container">
+        <section class="first">
+          <div class="left">
+            <h1 class="first__text">Следите за состоянием вашего города вместе с нами</h1>
+            <p class="first__description">Сообщайте о проблемах, контролируйте их устранение и делайте ваш город лучше</p>
+            <a href="problem-page.html" class="first__button">Cообщить о проблеме</a>
+          </div>
+          <div class="right">
+            <img src="images/first-photo.jpg" alt="Улица" class="first__photo">
+          </div>
+        </section>
+        <section class="second">
+          <h1 class="title">Актуальные проблемы</h1>
+          <div class="group">
+            <div class="group__text">
+              <h3 class="group__title">Дерево упало</h3>
+              <p class="description">
+                Сегодня во время сильного ветра огромное дерево рухнуло прямо на мой дом. Ветки повредили крышу, выбили стекло на втором этаже, а ствол перекрыл вход. Сейчас невозможно безопасно зайти внутрь, есть риск дальнейшего разрушения. Нужна срочная помощь коммунальных служб для удаления дерева и проверки конструкции здания.
+              </p>
+              <div class="group__statusbar">
+                <div class="group__statusbar-user">
+                  <img src="images/user-png.png" alt="user" class="group__statusbar-user-logo">
+                  <span class="group__statusbar-user-name">Вайсеров Вадим Юрьевич</span>
+                </div>
+                <ul class="group__statusbar-status">
+                  <li class="group__statusbar-status-item">45 голосов</li>
+                  <li class="group__statusbar-status-item">В процессе</li>
+                  <li class="group__statusbar-status-item">15:00 23.02.2025</li>
+                </ul>
+              </div>
+            </div>
+            <img src="images/problem-img.jpg" alt="tree" class="group__img">
+          </div>
+          <div class="group">
+            <div class="group__text">
+              <h3 class="group__title">Название</h3>
+              <p class="description">
+                Описание
+              </p>
+              <div class="group__statusbar">
+                <div class="group__statusbar-user">
+                  <img src="images/user-png.png" alt="user" class="group__statusbar-user-logo">
+                  <span class="group__statusbar-user-name">Фамилия Имя Отчество</span>
+                </div>
+                <ul class="group__statusbar-status">
+                  <li class="group__statusbar-status-item">0 голосов</li>
+                  <li class="group__statusbar-status-item">Статус</li>
+                  <li class="group__statusbar-status-item">ЧЧ:ММ ДД.ММ.ГГГГ</li>
+                </ul>
+              </div>
+            </div>
+            <img src="images/problem-img.jpg" alt="tree" class="group__img">
+          </div>
+            <a href="all-problems-auth.html" class="second__btn-txt">Показать все проблемы</a>
+        </section>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="container">
+        <nav class="footer__menu">
+          <ul class="footer__menu-list footer__menu-list-logo">
+            <li class="footer__menu-item">
+              <a href="index-auth.html" class="footer__menu-link"><img src="images/logo.svg" alt="logo"></a>
+            </li>
+          </ul>
+          <ul class="footer__menu-list">
+            <li class="footer__menu-item">
+              <a href="mailto:mytown@mail.ru" class="footer__menu-link">mytown@mail.ru</a>
+            </li>
+            <li class="footer__menu-item">© 2025 Мой Город</li>
+          </ul>
+          <ul class="footer__menu-list">
+            <li class="footer__menu-item">
+              <a href="tel:+79528126969" class="footer__menu-link">8-952-812-69-69</a>
+            </li>
+            <li class="footer__menu-item">
+              <a href="#" class="footer__menu-link">Вконтакте</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
