@@ -31,7 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
           id: 'password',
           errorId: 'password-error',
           emptyMessage: 'Пожалуйста, введите пароль',
-          validation: () => true
+          validation: (value) => {
+            if (value.length < 6) return 'Пароль должен содержать не менее 6 символов';
+            return true;
+          }
         },
         { 
           id: 'confirm-password',
