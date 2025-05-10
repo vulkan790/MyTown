@@ -26,20 +26,58 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault();
     let isValid = true;
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     const requiredFields = [
-      { id: 'lastname', errorId: 'lastname-error', message: 'Пожалуйста, введите фамилию' },
-      { id: 'firstname', errorId: 'firstname-error', message: 'Пожалуйста, введите имя' },
-      { id: 'email', errorId: 'email-error', message: 'Пожалуйста, введите email' },
-      { id: 'password', errorId: 'password-error', message: 'Пожалуйста, введите пароль' }
+      { 
+        id: 'lastname', 
+        errorId: 'lastname-error', 
+        message: 'Пожалуйста, введите фамилию',
+        validation: null
+      },
+      { 
+        id: 'firstname', 
+        errorId: 'firstname-error', 
+        message: 'Пожалуйста, введите имя',
+        validation: null
+      },
+      { 
+        id: 'email', 
+        errorId: 'email-error', 
+        message: 'Пожалуйста, введите корректный email',
+        validation: (value) => emailRegex.test(value)
+      },
+      { 
+        id: 'password', 
+        errorId: 'password-error', 
+        message: 'Пароль должен содержать не менее 6 символов',
+        validation: (value) => value.length >= 6
+      }
     ];
 
     requiredFields.forEach(field => {
       const input = document.getElementById(field.id);
       const error = document.getElementById(field.errorId);
-      if (!input.value.trim()) 
-        {
-        input.classList.add('error');
+      
+      if (!input || !error) return;
+
+      const value = input.value.trim();
+      let fieldValid = true;
+
+      if (!value) 
+      {
+        fieldValid = false;
+        error.textContent = field.message.replace('корректный ', '').replace('не менее 6 символов', '');
+      }
+      else if (field.validation && !field.validation(value)) 
+      {
+        fieldValid = false;
         error.textContent = field.message;
+      }
+
+      if (!fieldValid) 
+      {
+        input.classList.add('error');
         error.style.display = 'block';
         isValid = false;
       } 
@@ -54,26 +92,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmPassword = document.getElementById('confirm-password');
     const confirmError = document.getElementById('confirm-password-error');
     
-    if (password.value !== confirmPassword.value && confirmPassword.value.trim()) 
-    {
-      confirmPassword.classList.add('error');
-      confirmError.textContent = 'Пароли не совпадают';
-      confirmError.style.display = 'block';
-      isValid = false;
-    } 
-    else 
-    {
-      confirmPassword.classList.remove('error');
-      confirmError.style.display = 'none';
+    if (password && confirmPassword && confirmError) {
+      const passwordValue = password.value.trim();
+      const confirmValue = confirmPassword.value.trim();
+      
+      if (passwordValue !== confirmValue || !confirmValue) 
+      {
+        confirmPassword.classList.add('error');
+        confirmError.textContent = passwordValue !== confirmValue 
+          ? 'Пароли не совпадают' 
+          : 'Пожалуйста, подтвердите пароль';
+        confirmError.style.display = 'block';
+        isValid = false;
+      } 
+      else 
+      {
+        confirmPassword.classList.remove('error');
+        confirmError.style.display = 'none';
+      }
     }
 
     const agreement = document.getElementById('agreement');
     const agreementError = document.getElementById('agreement-error');
-    if (!agreement.checked) {
+    if (agreement && !agreement.checked) 
+    {
       agreementError.style.display = 'block';
       isValid = false;
     } 
-    else
+    else if (agreementError)
       agreementError.style.display = 'none';
 
     if (isValid)
