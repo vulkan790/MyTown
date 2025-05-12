@@ -25,7 +25,8 @@ type Problem = {
   id: number;
   title: string;
   description: string;
-  address: string;
+  latitude: number;
+  longitude: number;
   status: string;
   images: string[];
   votes: number;
@@ -94,7 +95,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       id: problems.id,
       title: problems.title,
       description: problems.description,
-      address: problems.address,
+      latitude: problems.latitude,
+      longitude: problems.longitude,
       status: problems.status,
       images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
       votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),
@@ -185,7 +187,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       id: problems.id,
       title: problems.title,
       description: problems.description,
-      address: problems.address,
+      latitude: problems.latitude,
+      longitude: problems.longitude,
       status: problems.status,
       images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
       votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),
@@ -304,7 +307,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
         id: problems.id,
         title: problems.title,
         description: problems.description,
-        address: problems.address,
+        latitude: problems.latitude,
+        longitude: problems.longitude,
         status: problems.status,
         images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
         votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),

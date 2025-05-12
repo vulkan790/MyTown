@@ -18,7 +18,8 @@ type RichUser = {
     id: number;
     title: string;
     description: string;
-    address: string;
+    latitude: number;
+    longitude: number;
     status: string;
     images: string[];
     votes: number;
@@ -57,7 +58,8 @@ export const registerUserService = async (fastify: FastifyInstance) => {
         id: problems.id,
         title: problems.title,
         description: problems.description,
-        address: problems.address,
+        latitude: problems.latitude,
+        longitude: problems.longitude,
         status: problems.status,
         images: problemImagesCTE.images,
         votes: problemVotesCTE.votes,
@@ -82,7 +84,8 @@ export const registerUserService = async (fastify: FastifyInstance) => {
           id: number;
           title: string;
           description: string;
-          address: string;
+          latitude: number;
+          longitude: number;
           status: string;
           images: string[] | null;
           votes: number | null;
