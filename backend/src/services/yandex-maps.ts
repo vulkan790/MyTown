@@ -15,7 +15,7 @@ interface Distance {
 
 interface ResultItem {
   title: TextItem;
-  subtitle: TextItem;
+  subtitle?: TextItem;
   tags: string[];
   distance: Distance;
   uri: string;
@@ -174,7 +174,7 @@ export const registerYandexMaps = async (fastify: FastifyInstance) => {
 
     const suggestions = suggestionsResult.value.results.map((item) => ({
       title: item.title.text,
-      subtitle: item.subtitle.text,
+      subtitle: item.subtitle?.text ?? '',
       uri: item.uri,
     }));
 
