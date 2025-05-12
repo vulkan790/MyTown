@@ -34,6 +34,12 @@ const RichProblem = Type.Composite([Problem, Type.Object({
   comments: Type.Array(Comment),
 })]);
 
+const Address = Type.Object({
+  title: Type.String(),
+  subtitle: Type.String(),
+  uri: Type.String(),
+});
+
 // get problems
 const getAllProblemsQuery = Type.Object({
   page: Type.Integer({ minimum: 1, default: 1 }),
@@ -80,3 +86,19 @@ export const getHotProblemsSchema = {
 } satisfies FastifySchema;
 
 export type GetHotProblemsSchema = typeof getHotProblemsSchema;
+
+// get address suggestions
+const getAddressSuggestionsQuery = Type.Object({
+  address: Type.String(),
+});
+
+const getAddressSuggestionsResponse = Type.Array(Address);
+
+export const getAddressSuggestionsSchema = {
+  querystring: getAddressSuggestionsQuery,
+  response: {
+    200: getAddressSuggestionsResponse,
+  },
+} satisfies FastifySchema;
+
+export type GetAddressSuggestionsSchema = typeof getAddressSuggestionsSchema;

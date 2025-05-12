@@ -52,6 +52,12 @@ type RichProblem = Problem & {
   createdAt: string;
 };
 
+type AddressSuggestion = {
+  title: string;
+  subtitle: string;
+  uri: string;
+};
+
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
 
@@ -383,10 +389,23 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     });
   };
 
+  const getAddressSuggestions = async (
+    query: string,
+    userId: number
+  ): Promise<Result<AddressSuggestion[], 'unknown_error'>> => {
+    const suggestionsResult = await fastify.yandexMaps.suggest(query, userId);
+    if (suggestionsResult.isErr()) {
+      return err('unknown_error');
+    }
+
+    return ok(suggestionsResult.value);
+  };
+
   fastify.decorate('problemService', {
     getProblems,
     getHotProblems,
     getProblem,
+    getAddressSuggestions,
   });
 };
 
@@ -396,6 +415,7 @@ declare module 'fastify' {
       getProblems: (page: number, limit: number) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
       getHotProblems: (limit?: number) => Promise<Result<Problem[], 'unknown_error'>>;
       getProblem: (id: number, user: JwtPayload | null) => Promise<Result<RichProblem, 'unknown_problem' | 'unknown_error'>>;
+      getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>
     };
   }
 }

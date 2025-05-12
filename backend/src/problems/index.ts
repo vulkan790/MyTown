@@ -13,6 +13,10 @@ export async function ProblemsController (fastify: FastifyTypebox) {
     schema: schema.getProblemSchema,
     preHandler: fastify.jwtHelpers.tryAuthenticate,
   }, getProblem);
+  fastify.get('/address-suggest', {
+    schema: schema.getAddressSuggestionsSchema,
+    preHandler: fastify.jwtHelpers.authenticate,
+  }, getAddressSuggestions);
 }
 
 async function getProblems (
@@ -63,6 +67,22 @@ async function getHotProblems (
   reply: FastifyReplyTypeBox<schema.GetHotProblemsSchema>
 ) {
   const result = await this.problemService.getHotProblems();
+  if (result.isOk()) {
+    await reply.status(200).send(result.value);
+    return;
+  }
+
+  await reply.status(500).send();
+}
+
+async function getAddressSuggestions (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.GetAddressSuggestionsSchema>,
+  reply: FastifyReplyTypeBox<schema.GetAddressSuggestionsSchema>
+) {
+  const { address } = request.query;
+
+  const result = await this.problemService.getAddressSuggestions(address, request.user.userId);
   if (result.isOk()) {
     await reply.status(200).send(result.value);
     return;
