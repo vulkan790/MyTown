@@ -161,6 +161,7 @@ export const registerYandexMaps = async (fastify: FastifyInstance) => {
     url.searchParams.set('highlight', '0');
     url.searchParams.set('sessiontoken', getSession(userId));
     url.searchParams.set('attrs', 'uri');
+    url.searchParams.set('ll', '38.871501,47.234551');
 
     const suggestionsResult = await fromPromise(
       ky.get<SuggestApiResponse>(url).json(),
