@@ -24,7 +24,17 @@ const registerDrizzle = (fastify: FastifyInstance) => {
 };
 
 const main = async () => {
-  const fastify = Fastify().withTypeProvider<TypeBoxTypeProvider>();
+  const fastify = Fastify({
+    logger: {
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          translateTime: 'HH:MM:ss Z',
+          ignore: 'pid,hostname',
+        },
+      },
+    },
+  }).withTypeProvider<TypeBoxTypeProvider>();
 
   await registerEnv(fastify);
   registerDrizzle(fastify);
