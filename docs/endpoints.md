@@ -254,6 +254,39 @@ query (всё, что идет после вопроса в конце URL), pat
 // empty
 ```
 
+## GET /api/problems/address-suggest
+
+Подсказки для ввода адреса.
+
+### Request
+
+**Headers**
+```json
+{
+  "authorization": "Bearer jwt-token"
+}
+```
+
+**Query Params**
+```json
+{
+  "address": "таганрог богдан хмель"
+}
+```
+
+### Response
+
+**200 Ok**
+```json
+[
+  {
+    "title": "улица Богдана Хмельницкого",
+    "subtitle": "Таганрог, Ростовская область",
+    "uri": "ymapsbm1://geo?data=CggyNDA1MDEwORJ30KDQvtGB0YHQuNGPLCDQoNC-0YHRgtC-0LLRgdC60LDRjyDQvtCx0LvQsNGB0YLRjCwg0KLQsNCz0LDQvdGA0L7Qsywg0YPQu9C40YbQsCDQkdC-0LPQtNCw0L3QsCDQpdC80LXQu9GM0L3QuNGG0LrQvtCz0L4,"
+  }
+]
+```
+
 ## POST /api/problems
 
 Сообщить о проблеме.
@@ -275,7 +308,7 @@ query (всё, что идет после вопроса в конце URL), pat
 {
   "title": "По небу летят журавли",
   "description": "Всё, смерть, апокалипсис неминуем",
-  "address": "ул. Пальмиро-Тольяти"
+  "address": "ymapsbm1://geo?data=CggyNDA1MDEwORJ30KDQvtGB0YHQuNGPLCDQoNC-0YHRgtC-0LLRgdC60LDRjyDQvtCx0LvQsNGB0YLRjCwg0KLQsNCz0LDQvdGA0L7Qsywg0YPQu9C40YbQsCDQkdC-0LPQtNCw0L3QsCDQpdC80LXQu9GM0L3QuNGG0LrQvtCz0L4" // uri из GET /api/problems/address-suggest
 }
 ```
 
