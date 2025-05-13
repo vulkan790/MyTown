@@ -38,7 +38,7 @@ export const problems = pgTable('problems', {
 export const problemImages = pgTable('problem_images', {
   id: serial().primaryKey().notNull(),
   imageUrl: text().notNull(),
-  problemId: integer().references(() => problems.id, { onDelete: 'cascade' }),
+  problemId: integer().references(() => problems.id, { onDelete: 'set null' }),
   createdAt: timestamp().notNull().$defaultFn(() => new Date()),
 });
 
