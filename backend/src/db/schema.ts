@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { integer, pgTable, real, serial, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: serial().primaryKey().notNull(),
@@ -28,7 +28,8 @@ export const problems = pgTable('problems', {
   id: serial().primaryKey().notNull(),
   title: text().notNull(),
   description: text().notNull(),
-  address: text().notNull(),
+  latitude: real().notNull(),
+  longitude: real().notNull(),
   status: text().notNull(),
   userId: integer().references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp().notNull().$defaultFn(() => new Date()),
@@ -37,7 +38,7 @@ export const problems = pgTable('problems', {
 export const problemImages = pgTable('problem_images', {
   id: serial().primaryKey().notNull(),
   imageUrl: text().notNull(),
-  problemId: integer().references(() => problems.id, { onDelete: 'cascade' }),
+  problemId: integer().references(() => problems.id, { onDelete: 'set null' }),
   createdAt: timestamp().notNull().$defaultFn(() => new Date()),
 });
 

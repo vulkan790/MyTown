@@ -18,7 +18,8 @@ const Problem = Type.Object({
   id: Type.Number(),
   title: Type.String(),
   description: Type.String(),
-  address: Type.String(),
+  latitude: Type.Number(),
+  longitude: Type.Number(),
   images: Type.Array(Type.String()),
   status: Type.String(),
   votes: Type.Number(),
@@ -102,3 +103,48 @@ export const getAddressSuggestionsSchema = {
 } satisfies FastifySchema;
 
 export type GetAddressSuggestionsSchema = typeof getAddressSuggestionsSchema;
+
+// upload problem image
+const uploadProblemImageResponse = Type.Object({
+  id: Type.Integer(),
+  url: Type.String(),
+});
+
+export const uploadProblemImageSchema = {
+  // @ts-ignore: ts(2353)
+  consumes: ['multipart/form-data'],
+  response: {
+    201: uploadProblemImageResponse,
+  },
+} satisfies FastifySchema;
+
+export type UploadProblemImageSchema = typeof uploadProblemImageSchema;
+
+// create problem
+const createProblemBody = Type.Object({
+  title: Type.String({
+    minLength: 1,
+    maxLength: 100,
+  }),
+  description: Type.String({
+    minLength: 1,
+    maxLength: 4000,
+  }),
+  uri: Type.String({
+    minLength: 1,
+  }),
+  images: Type.Array(Type.Integer()),
+});
+
+const createProblemResponse = Type.Object({
+  id: Type.Integer(),
+});
+
+export const createProblemSchema = {
+  body: createProblemBody,
+  response: {
+    201: createProblemResponse,
+  },
+} satisfies FastifySchema;
+
+export type CreateProblemSchema = typeof createProblemSchema;

@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import fastifyEnv from '@fastify/env';
+import fastifyMultipart from '@fastify/multipart';
 
 import { EnvironmentSchema } from './schema';
 import { setupDrizzle } from './db';
@@ -24,6 +25,16 @@ const registerDrizzle = (fastify: FastifyInstance) => {
   fastify.decorate('drizzle', drizzle);
 };
 
+const registerMultipartFormData = (fastify: FastifyInstance) => {
+  fastify.register(fastifyMultipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB
+      fieldNameSize: 100,
+      files: 1,
+    },
+  });
+};
+
 const main = async () => {
   const fastify = Fastify({
     logger: {
@@ -38,6 +49,7 @@ const main = async () => {
   }).withTypeProvider<TypeBoxTypeProvider>();
 
   await registerEnv(fastify);
+  registerMultipartFormData(fastify);
   registerDrizzle(fastify);
   registerJwt(fastify);
   registerYandexMaps(fastify);

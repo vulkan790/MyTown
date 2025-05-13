@@ -1,9 +1,14 @@
 import { FastifyInstance } from 'fastify';
+import type { MultipartFile } from '@fastify/multipart';
 
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
-import { desc, eq, or, sql, sum } from 'drizzle-orm';
+import { and, desc, eq, or, sql, sum, isNull, inArray } from 'drizzle-orm';
 import { problems, problemVotes, problemImages, problemComments, users } from '../db/schema.js';
+
+import { createWriteStream } from 'node:fs';
+import { pipeline } from 'node:stream/promises';
+import { randomUUID } from 'node:crypto';
 
 import { JwtPayload } from '../auth/jwt.js';
 
@@ -25,7 +30,8 @@ type Problem = {
   id: number;
   title: string;
   description: string;
-  address: string;
+  latitude: number;
+  longitude: number;
   status: string;
   images: string[];
   votes: number;
@@ -57,6 +63,24 @@ type AddressSuggestion = {
   subtitle: string;
   uri: string;
 };
+
+type UploadedeProblemImage = {
+  id: number;
+  url: string;
+};
+
+type UploadProblemImageError = 'unknown_error' | 'no_image' | 'invalid_mime';
+
+type CreateProblemPayload = {
+  title: string;
+  description: string;
+  uri: string;
+  images: number[];
+};
+
+type CreateProblemError = 'unknown_error';
+
+type CreateProblemResult = Result<{ id: number }, CreateProblemError>;
 
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
@@ -94,7 +118,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       id: problems.id,
       title: problems.title,
       description: problems.description,
-      address: problems.address,
+      latitude: problems.latitude,
+      longitude: problems.longitude,
       status: problems.status,
       images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
       votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),
@@ -185,7 +210,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       id: problems.id,
       title: problems.title,
       description: problems.description,
-      address: problems.address,
+      latitude: problems.latitude,
+      longitude: problems.longitude,
       status: problems.status,
       images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
       votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),
@@ -304,7 +330,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
         id: problems.id,
         title: problems.title,
         description: problems.description,
-        address: problems.address,
+        latitude: problems.latitude,
+        longitude: problems.longitude,
         status: problems.status,
         images: sql<string[]>`COALESCE(${imagesCTE.images}, JSON_ARRAY())`.as('images'),
         votes: sql<number>`COALESCE(${votesCTE.votes}::integer, 0)`.as('votes'),
@@ -401,11 +428,107 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     return ok(suggestionsResult.value);
   };
 
+  const uploadProblemImage = async (
+    file?: MultipartFile['file'],
+    mime?: string
+  ): Promise<Result<UploadedeProblemImage, UploadProblemImageError>> => {
+    if (!file) {
+      return err('no_image');
+    }
+
+    if (!mime?.startsWith('image/')) {
+      return err('invalid_mime');
+    }
+
+    const filename = `${randomUUID()}.${mime.split('/')[1]}`;
+    const insertImageResult = await fromPromise(
+      drizzle.insert(problemImages).values({
+        imageUrl: `/uploads/${filename}`,
+      })
+        .returning({ id: problemImages.id }).then((r) => r.at(0)?.id),
+      (e) => e
+    );
+
+    if (insertImageResult.isErr()) {
+      console.error('Error during image insert', insertImageResult.error);
+      return err('unknown_error');
+    }
+
+    const filepath = `./uploads/${filename}`;
+    const saveResult = await fromPromise(
+      pipeline(file, createWriteStream(filepath)),
+      (e) => e
+    );
+
+    if (saveResult.isErr()) {
+      fromPromise(
+        drizzle.delete(problemImages).where(eq(problemImages.id, insertImageResult.value!)),
+        (e) => e
+      ).mapErr((e) => {
+        console.error('Error during image delete', e);
+      });
+
+      console.error('Error during image save to disk', saveResult.error);
+      return err('unknown_error');
+    }
+
+    return ok({
+      id: insertImageResult.value!,
+      url: `/uploads/${filename}`,
+    });
+  };
+
+  const createProblem = async (
+    { title, description, uri, images }: CreateProblemPayload,
+    userId: number
+  ): Promise<Result<{ id: number }, 'unknown_error'>> => {
+    const transaction = drizzle.transaction(async (tx) => {
+      const coordinatesResult = await fastify.yandexMaps.geocode(uri);
+      if (coordinatesResult.isErr()) {
+        return err('unknown_error');
+      }
+
+      const coordinates = coordinatesResult.value;
+      console.log('coordinates', coordinates);
+      const newProblemId = await tx.insert(problems).values({
+        title,
+        description,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        status: PROBLEM_STATUS.ON_MODERATION,
+        userId,
+      })
+        .returning({ id: problems.id })
+        .then(r => r.at(0)?.id);
+
+      if (!newProblemId) {
+        console.error('Error during problem insert', newProblemId);
+        return err('unknown_error');
+      }
+
+      await tx.update(problemImages).set({
+        problemId: newProblemId,
+      }).where(and(
+        isNull(problemImages.problemId),
+        inArray(problemImages.id, images)
+      ));
+
+      return ok({ id: newProblemId });
+    }).catch((e) => {
+      console.error('Error during create problem transaction', e);
+      return err('unknown_error');
+    });
+
+    return await transaction;
+  };
+
   fastify.decorate('problemService', {
     getProblems,
     getHotProblems,
     getProblem,
     getAddressSuggestions,
+    uploadProblemImage,
+    createProblem,
   });
 };
 
@@ -415,7 +538,9 @@ declare module 'fastify' {
       getProblems: (page: number, limit: number) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
       getHotProblems: (limit?: number) => Promise<Result<Problem[], 'unknown_error'>>;
       getProblem: (id: number, user: JwtPayload | null) => Promise<Result<RichProblem, 'unknown_problem' | 'unknown_error'>>;
-      getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>
+      getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>;
+      uploadProblemImage: (file?: MultipartFile['file'], mime?: string) => Promise<Result<UploadedeProblemImage, UploadProblemImageError>>;
+      createProblem: (payload: CreateProblemPayload, userId: number) => Promise<CreateProblemResult>;
     };
   }
 }

@@ -287,6 +287,42 @@ query (всё, что идет после вопроса в конце URL), pat
 ]
 ```
 
+## POST /api/problems/images
+
+Отправка изображений на сервер для проблем
+
+### Request
+
+**Headers**
+```json
+{
+  "authorization": "Bearer jwt-token",
+  "content-type": "multipart/form-data"
+}
+```
+
+### Response
+
+**201 Created**
+```json
+{
+  "id": 124,
+  "url": "/uploads/uuid.png"
+}
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "" // "too_large_file"
+}
+```
+
+**401 Unauthorized**
+```json
+// empty
+```
+
 ## POST /api/problems
 
 Сообщить о проблеме.
@@ -301,14 +337,12 @@ query (всё, что идет после вопроса в конце URL), pat
 ```
 
 **Body**  
-Тип отправляемых данных - `multipart/form-data`.
-
-В поле `data` - инфа о проблеме в следующем формате
 ```json
 {
   "title": "По небу летят журавли",
   "description": "Всё, смерть, апокалипсис неминуем",
-  "address": "ymapsbm1://geo?data=CggyNDA1MDEwORJ30KDQvtGB0YHQuNGPLCDQoNC-0YHRgtC-0LLRgdC60LDRjyDQvtCx0LvQsNGB0YLRjCwg0KLQsNCz0LDQvdGA0L7Qsywg0YPQu9C40YbQsCDQkdC-0LPQtNCw0L3QsCDQpdC80LXQu9GM0L3QuNGG0LrQvtCz0L4" // uri из GET /api/problems/address-suggest
+  "address": "ymapsbm1://geo?data=CggyNDA1MDEwORJ30KDQvtGB0YHQuNGPLCDQoNC-0YHRgtC-0LLRgdC60LDRjyDQvtCx0LvQsNGB0YLRjCwg0KLQsNCz0LDQvdGA0L7Qsywg0YPQu9C40YbQsCDQkdC-0LPQtNCw0L3QsCDQpdC80LXQu9GM0L3QuNGG0LrQvtCz0L4", // uri из GET /api/problems/address-suggest,
+  "images": [1, 2, 3] // id из POST /api/problems/images
 }
 ```
 
@@ -324,7 +358,7 @@ query (всё, что идет после вопроса в конце URL), pat
 **400 Bad Request**
 ```json
 {
-  "error": "" // "too_large_files" | json fields validation errors
+  "error": "" // json field validation errors
 }
 ```
 
