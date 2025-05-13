@@ -119,3 +119,32 @@ export const uploadProblemImageSchema = {
 } satisfies FastifySchema;
 
 export type UploadProblemImageSchema = typeof uploadProblemImageSchema;
+
+// create problem
+const createProblemBody = Type.Object({
+  title: Type.String({
+    minLength: 1,
+    maxLength: 100,
+  }),
+  description: Type.String({
+    minLength: 1,
+    maxLength: 4000,
+  }),
+  uri: Type.String({
+    minLength: 1,
+  }),
+  images: Type.Array(Type.Integer()),
+});
+
+const createProblemResponse = Type.Object({
+  id: Type.Integer(),
+});
+
+export const createProblemSchema = {
+  body: createProblemBody,
+  response: {
+    201: createProblemResponse,
+  },
+} satisfies FastifySchema;
+
+export type CreateProblemSchema = typeof createProblemSchema;

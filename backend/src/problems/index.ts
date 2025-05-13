@@ -21,6 +21,7 @@ export async function ProblemsController (fastify: FastifyTypebox) {
   fastify.register(async (authFastify) => {
     authFastify.addHook('preHandler', fastify.jwtHelpers.authenticate);
 
+    authFastify.post('/', { schema: schema.createProblemSchema }, createProblem);
     authFastify.post('/images', { schema: schema.uploadProblemImageSchema }, uploadProblemImage);
   });
 }
@@ -105,6 +106,34 @@ async function uploadProblemImage (
   const image = await request.file();
 
   const result = await this.problemService.uploadProblemImage(image?.file, image?.mimetype);
+  if (result.isOk()) {
+    await reply.status(201).send(result.value);
+    return;
+  }
+
+  if (result.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: result.error,
+  };
+}
+
+async function createProblem (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.CreateProblemSchema>,
+  reply: FastifyReplyTypeBox<schema.CreateProblemSchema>
+) {
+  const { title, description, uri, images } = request.body;
+
+  const result = await this.problemService.createProblem(
+    { title, description, uri, images },
+    request.user.userId
+  );
+
   if (result.isOk()) {
     await reply.status(201).send(result.value);
     return;

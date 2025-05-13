@@ -3,7 +3,7 @@ import type { MultipartFile } from '@fastify/multipart';
 
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
-import { desc, eq, or, sql, sum } from 'drizzle-orm';
+import { and, desc, eq, or, sql, sum, isNull, inArray } from 'drizzle-orm';
 import { problems, problemVotes, problemImages, problemComments, users } from '../db/schema.js';
 
 import { createWriteStream } from 'node:fs';
@@ -70,6 +70,17 @@ type UploadedeProblemImage = {
 };
 
 type UploadProblemImageError = 'unknown_error' | 'no_image' | 'invalid_mime';
+
+type CreateProblemPayload = {
+  title: string;
+  description: string;
+  uri: string;
+  images: number[];
+};
+
+type CreateProblemError = 'unknown_error';
+
+type CreateProblemResult = Result<{ id: number }, CreateProblemError>;
 
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
@@ -467,12 +478,57 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     });
   };
 
+  const createProblem = async (
+    { title, description, uri, images }: CreateProblemPayload,
+    userId: number
+  ): Promise<Result<{ id: number }, 'unknown_error'>> => {
+    const transaction = drizzle.transaction(async (tx) => {
+      const coordinatesResult = await fastify.yandexMaps.geocode(uri);
+      if (coordinatesResult.isErr()) {
+        return err('unknown_error');
+      }
+
+      const coordinates = coordinatesResult.value;
+      console.log('coordinates', coordinates);
+      const newProblemId = await tx.insert(problems).values({
+        title,
+        description,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        status: PROBLEM_STATUS.ON_MODERATION,
+        userId,
+      })
+        .returning({ id: problems.id })
+        .then(r => r.at(0)?.id);
+
+      if (!newProblemId) {
+        console.error('Error during problem insert', newProblemId);
+        return err('unknown_error');
+      }
+
+      await tx.update(problemImages).set({
+        problemId: newProblemId,
+      }).where(and(
+        isNull(problemImages.problemId),
+        inArray(problemImages.id, images)
+      ));
+
+      return ok({ id: newProblemId });
+    }).catch((e) => {
+      console.error('Error during create problem transaction', e);
+      return err('unknown_error');
+    });
+
+    return await transaction;
+  };
+
   fastify.decorate('problemService', {
     getProblems,
     getHotProblems,
     getProblem,
     getAddressSuggestions,
     uploadProblemImage,
+    createProblem,
   });
 };
 
@@ -484,6 +540,7 @@ declare module 'fastify' {
       getProblem: (id: number, user: JwtPayload | null) => Promise<Result<RichProblem, 'unknown_problem' | 'unknown_error'>>;
       getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>;
       uploadProblemImage: (file?: MultipartFile['file'], mime?: string) => Promise<Result<UploadedeProblemImage, UploadProblemImageError>>;
+      createProblem: (payload: CreateProblemPayload, userId: number) => Promise<CreateProblemResult>;
     };
   }
 }
