@@ -401,6 +401,13 @@ query (всё, что идет после вопроса в конце URL), pat
 // empty (success)
 ```
 
+**400 Bad Request**
+```json
+{
+  "error": "already_moderated"
+}
+```
+
 **401 Unauthorized**
 ```json
 // empty
