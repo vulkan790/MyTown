@@ -390,7 +390,7 @@ query (всё, что идет после вопроса в конце URL), pat
 **Body**
 ```json
 {
-  "solution": "" // "reject" | "approve"
+  "decision": "" // "reject" | "approve"
 }
 ```
 
