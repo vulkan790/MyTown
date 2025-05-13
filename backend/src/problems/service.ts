@@ -82,6 +82,8 @@ type CreateProblemError = 'unknown_error';
 
 type CreateProblemResult = Result<{ id: number }, CreateProblemError>;
 
+type ModerationErrors = 'unknown_problem' | 'unknown_error' | 'forbidden' | 'already_moderated';
+
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
 
@@ -522,6 +524,55 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     return await transaction;
   };
 
+  const moderateProblem = async (
+    id: number,
+    status: 'approve' | 'reject',
+    user: JwtPayload
+  ): Promise<Result<void, ModerationErrors>> => {
+    if (user.role !== 'admin' && user.role !== 'mod') {
+      return err('forbidden');
+    }
+
+    const problemSelect = drizzle
+      .select({ id: problems.id, status: problems.status })
+      .from(problems)
+      .where(eq(problems.id, id));
+
+    const problemResult = await fromPromise(
+      problemSelect.then((r) => r.at(0)),
+      (e) => e
+    );
+
+    if (problemResult.isErr()) {
+      console.error('Error during getting problem', problemResult.error);
+      return err('unknown_error');
+    }
+
+    const problem = problemResult.value;
+    if (!problem) {
+      return err('unknown_problem');
+    }
+
+    if (problem.status !== PROBLEM_STATUS.ON_MODERATION) {
+      return err('already_moderated');
+    }
+
+    const newStatus = status === 'approve' ? PROBLEM_STATUS.WAIT_FOR_SOLVE : PROBLEM_STATUS.REJECTED;
+    const updateResult = await fromPromise(
+      drizzle.update(problems).set({
+        status: newStatus,
+      }).where(eq(problems.id, id)),
+      (e) => e
+    );
+
+    if (updateResult.isErr()) {
+      console.error('Error during problem update', updateResult.error);
+      return err('unknown_error');
+    }
+
+    return ok();
+  };
+
   fastify.decorate('problemService', {
     getProblems,
     getHotProblems,
@@ -529,6 +580,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     getAddressSuggestions,
     uploadProblemImage,
     createProblem,
+    moderateProblem,
   });
 };
 
@@ -541,6 +593,7 @@ declare module 'fastify' {
       getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>;
       uploadProblemImage: (file?: MultipartFile['file'], mime?: string) => Promise<Result<UploadedeProblemImage, UploadProblemImageError>>;
       createProblem: (payload: CreateProblemPayload, userId: number) => Promise<CreateProblemResult>;
+      moderateProblem: (id: number, status: 'approve' | 'reject', user: JwtPayload) => Promise<Result<void, ModerationErrors>>;
     };
   }
 }

@@ -23,6 +23,7 @@ export async function ProblemsController (fastify: FastifyTypebox) {
 
     authFastify.post('/', { schema: schema.createProblemSchema }, createProblem);
     authFastify.post('/images', { schema: schema.uploadProblemImageSchema }, uploadProblemImage);
+    authFastify.post('/:id/moderation', { schema: schema.moderateProblemSchema }, moderateProblem);
   });
 }
 
@@ -141,6 +142,41 @@ async function createProblem (
 
   if (result.error === 'unknown_error') {
     await reply.status(500).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: result.error,
+  };
+}
+
+async function moderateProblem (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.ModerateProblemSchema>,
+  reply: FastifyReplyTypeBox<schema.ModerateProblemSchema>
+) {
+  const { id } = request.params;
+  const { decision } = request.body;
+
+  const result = await this.problemService.moderateProblem(id, decision, request.user);
+  if (result.isOk()) {
+    await reply.status(204).send();
+    return;
+  }
+
+  if (result.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  if (result.error === 'unknown_problem') {
+    await reply.status(404).send();
+    return;
+  }
+
+  if (result.error === 'forbidden') {
+    await reply.status(403).send();
     return;
   }
 
