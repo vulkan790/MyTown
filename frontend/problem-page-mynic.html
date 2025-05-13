@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мой город</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <div class="container">
+        <div class="header__inner">
+          <a href="index.html" class="logo">
+            <img src="images/logo.svg" alt="logo" class="logo__img">
+            <span class="logo-text">Мой Город</span>
+          </a>
+          <nav class="menu">
+            <ul class="menu__list">
+              <li class="menu__list-item">
+                <a href="profile-mynic.html" class="menu__list-user">
+                  <img src="images/Profile.svg" alt="Вадим" class="user-avatar">
+                </a>
+              </li>
+              <li class="menu__list-item"><a class="menu__list-link">Вадим</a></li>
+              <li class="menu__list-item-btn-exit"><a href="index.html" class="menu__list-link-btn-exit">Выйти</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </header>
+    <main class="main-problem">
+      <div class="container">
+        <section class="first">
+          <div class="left-problem">
+            <img src="images/first-photo.jpg" alt="Улица" class="first__photo">
+            <div class="group__statusbar-user">
+              <img src="images/user-png.png" alt="user" class="group__statusbar-user-logo">
+              <span class="group__statusbar-user-name">Вайсеров Вадим Юрьевич</span>
+            </div>
+          </div>
+          <div class="right-problem">
+            <div class="problem__address">
+              <h2 class="title-address">Адрес</h2>
+              <p class="text-address">Ростовская обл., Таганрог, ул. Розы Люксембург, 240-5, р-н Центральный</p>
+            </div>
+            <div class="problem__description">
+              <h2 class="title-address">Описание</h2>
+              <p class="text-address">Сегодня во время сильного ветра огромное дерево рухнуло прямо на мой дом. Ветки повредили крышу, выбили стекло на втором этаже, а ствол перекрыл вход. Сейчас невозможно безопасно зайти внутрь, есть риск дальнейшего разрушения. Нужна срочная помощь коммунальных служб для удаления дерева и проверки конструкции здания</p>
+            </div>
+            <div class="problem__status">
+              <li class="status-number">45 голосов</li>
+            </div>
+          </div>
+        </section>
+        <section class="second">
+          <div class="comments-section">
+            <div class="mynic-comments">
+              <h1 class="main-text-mynic" style="margin-top: 180px;">Комментарии муниципалитета</h1>
+              <div class="mynic-comment-box">
+                <div class="comment-avatar-container">
+                  <img src="images/user-png.png" alt="Аватар" class="comment-avatar">
+                </div>
+                <div class="comment-input-wrapper">
+                  <div class="comment-input-container">
+                    <textarea placeholder="Добавьте комментарий..." class="mynic-comment-input"></textarea>
+                  </div>
+                  <div class="comment-buttons">
+                    <li type="submit" class="comment-submit-btn"><a class="comment-submit-link">Комментировать</a></li>
+                  </div>
+                </div>
+              </div>
+              <div class="comments-list">
+                <div class="comment">
+                  <div class="comment-header">
+                    <img src="images/user-png.png" alt="user" class="comment-avatar">
+                    <div class="comment-author-info">
+                      <span class="comment-author">Имя Фамилия Отчество</span>
+                      <span class="comment-time">15:30 23.02.2025</span>
+                    </div>
+                  </div>
+                  <p class="comment-text">Работаем, вызвали ещё спасателей</p>
+                </div>
+                <div class="comment">
+                  <div class="comment-header">
+                    <img src="images/user-png.png" alt="user" class="comment-avatar">
+                    <div class="comment-author-info">
+                      <span class="comment-author">Имя Фамилия Отчество</span>
+                      <span class="comment-time">15:30 23.02.2025</span>
+                    </div>
+                  </div>
+                  <p class="comment-text">Работаем, вызвали ещё спасателей</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="container">
+        <nav class="footer__menu">
+          <ul class="footer__menu-list footer__menu-list-logo">
+            <li class="footer__menu-item">
+              <a href="index.html" class="footer__menu-link"><img src="images/logo.svg" alt="logo"></a>
+            </li>
+          </ul>
+          <ul class="footer__menu-list">
+            <li class="footer__menu-item">
+              <a href="mailto:mytown@mail.ru" class="footer__menu-link">mytown@mail.ru</a>
+            </li>
+            <li class="footer__menu-item">© 2025 Мой Город</li>
+          </ul>
+          <ul class="footer__menu-list">
+            <li class="footer__menu-item">
+              <a href="tel:+79528126969" class="footer__menu-link">8-952-812-69-69</a>
+            </li>
+            <li class="footer__menu-item">
+              <a href="#" class="footer__menu-link">Вконтакте</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
