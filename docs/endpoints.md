@@ -287,6 +287,42 @@ query (всё, что идет после вопроса в конце URL), pat
 ]
 ```
 
+## POST /api/problems/images
+
+Отправка изображений на сервер для проблем
+
+### Request
+
+**Headers**
+```json
+{
+  "authorization": "Bearer jwt-token",
+  "content-type": "multipart/form-data"
+}
+```
+
+### Response
+
+**201 Created**
+```json
+{
+  "id": 124,
+  "url": "/uploads/uuid.png"
+}
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "" // "too_large_file"
+}
+```
+
+**401 Unauthorized**
+```json
+// empty
+```
+
 ## POST /api/problems
 
 Сообщить о проблеме.
