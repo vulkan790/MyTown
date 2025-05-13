@@ -148,3 +148,25 @@ export const createProblemSchema = {
 } satisfies FastifySchema;
 
 export type CreateProblemSchema = typeof createProblemSchema;
+
+// moderate problem
+const moderateProblemParams = Type.Object({
+  id: Type.Integer(),
+});
+
+const moderateProblemBody = Type.Object({
+  decision: Type.Union([
+    Type.Literal('approve'),
+    Type.Literal('reject'),
+  ]),
+});
+
+export const moderateProblemSchema = {
+  params: moderateProblemParams,
+  body: moderateProblemBody,
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type ModerateProblemSchema = typeof moderateProblemSchema;

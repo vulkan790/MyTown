@@ -390,7 +390,7 @@ query (всё, что идет после вопроса в конце URL), pat
 **Body**
 ```json
 {
-  "solution": "" // "reject" | "approve"
+  "decision": "" // "reject" | "approve"
 }
 ```
 
@@ -399,6 +399,13 @@ query (всё, что идет после вопроса в конце URL), pat
 **204 No Content**
 ```json
 // empty (success)
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "already_moderated"
+}
 ```
 
 **401 Unauthorized**
