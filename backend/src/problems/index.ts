@@ -17,6 +17,12 @@ export async function ProblemsController (fastify: FastifyTypebox) {
     schema: schema.getAddressSuggestionsSchema,
     preHandler: fastify.jwtHelpers.authenticate,
   }, getAddressSuggestions);
+
+  fastify.register(async (authFastify) => {
+    authFastify.addHook('preHandler', fastify.jwtHelpers.authenticate);
+
+    authFastify.post('/images', { schema: schema.uploadProblemImageSchema }, uploadProblemImage);
+  });
 }
 
 async function getProblems (
@@ -89,4 +95,28 @@ async function getAddressSuggestions (
   }
 
   await reply.status(500).send();
+}
+
+async function uploadProblemImage (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.UploadProblemImageSchema>,
+  reply: FastifyReplyTypeBox<schema.UploadProblemImageSchema>
+) {
+  const image = await request.file();
+
+  const result = await this.problemService.uploadProblemImage(image?.file, image?.mimetype);
+  if (result.isOk()) {
+    await reply.status(201).send(result.value);
+    return;
+  }
+
+  if (result.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: result.error,
+  };
 }
