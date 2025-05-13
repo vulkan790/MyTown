@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import fastifyEnv from '@fastify/env';
 import fastifyMultipart from '@fastify/multipart';
+import fastifyCors from '@fastify/cors';
 
 import { EnvironmentSchema } from './schema';
 import { setupDrizzle } from './db';
@@ -35,6 +36,13 @@ const registerMultipartFormData = (fastify: FastifyInstance) => {
   });
 };
 
+const registerCors = (fastify: FastifyInstance) => {
+  fastify.register(fastifyCors, {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  });
+};
+
 const main = async () => {
   const fastify = Fastify({
     logger: {
@@ -50,6 +58,7 @@ const main = async () => {
 
   await registerEnv(fastify);
   registerMultipartFormData(fastify);
+  registerCors(fastify);
   registerDrizzle(fastify);
   registerJwt(fastify);
   registerYandexMaps(fastify);
