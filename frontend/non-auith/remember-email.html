@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html class="autorization" lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мой город</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"> 
+  <link rel="stylesheet" href="../style.css">
+  <script src="../non-auith/JavaScript/open-auth-rem-email.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <header class="header">
+      <div class="container">
+        <div class="header__inner">
+          <a href="index.html" class="logo">
+            <img src="../images/logo.svg" alt="logo" class="logo__img">
+            <span class="logo-text">Мой Город</span>
+          </a>
+        </div>
+      </div>
+    </header>
+    <main class="main">
+      <div class="container">
+        <section class="reg-container">
+          <div class="login-section-in">
+            <p class="main-text-login"><bold>С возвращением!</bold></p>
+            <p class="second-text">Чтобы продолжить работу с сайтом, необходимо авторизоваться</p>
+          </div>
+          <div class="process-auth">
+            <div class="form-selction">
+              <div class="form-group">
+                <label for="email" class="label-control">Почта</label>
+                <input type="text" id="email" class="form-control" placeholder="Введите почту">
+                <div id="email-error" class="error-message">Пожалуйста, введите email</div>
+                <div id="email-error" class="error-message">Пожалуйста, введите корректный email</div>
+              </div>
+            </div>
+            <div class="agreement-section">
+              <div class="register-container">
+                <li class="next-btn"><a href="remember-code.html" class="next-link">Далее</a></li>
+              </div>
+            </div>
+          </div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="container">
+        <nav class="footer__menu">
+          <ul class="footer__menu-list footer__menu-list-logo">
+            <li class="footer__menu-item">
+              <a href="#" class="footer__menu-link"><img src="../images/logo.svg" alt="logo"></a>
+            </li>
+          </ul>
+          <ul class="footer__menu-list">
+            <li class="footer__menu-item">
+              <a href="mailto:mytown@mail.ru" class="footer__menu-link">mytown@mail.ru</a>
+            </li>
+            <li class="footer__menu-item">© 2025 Мой Город</li>
+          </ul>
+          <ul class="footer__menu-list">
+            <li class="footer__menu-item">
+              <a href="tel:+79528126969" class="footer__menu-link">8-952-812-69-69</a>
+            </li>
+            <li class="footer__menu-item">
+              <a href="#" class="footer__menu-link">Вконтакте</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
