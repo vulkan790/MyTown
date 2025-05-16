@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { FastifyReplyTypeBox, FastifyRequestTypeBox, FastifyTypebox } from '../types/typebox';
 
-import { registerUserService } from './service';
+import { registerUserService } from './service.js';
 import * as schemas from './schemas.js';
 
 export async function UsersController (fastify: FastifyTypebox) {
