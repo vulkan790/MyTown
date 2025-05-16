@@ -9,10 +9,6 @@ export async function ProblemsController (fastify: FastifyTypebox) {
 
   fastify.get('/', { schema: schema.getAllProblemsSchema }, getProblems);
   fastify.get('/hot', { schema: schema.getHotProblemsSchema }, getHotProblems);
-  fastify.get('/:id', {
-    schema: schema.getProblemSchema,
-    preHandler: fastify.jwtHelpers.tryAuthenticate,
-  }, getProblem);
   fastify.get('/address-suggest', {
     schema: schema.getAddressSuggestionsSchema,
     preHandler: fastify.jwtHelpers.authenticate,
@@ -23,8 +19,14 @@ export async function ProblemsController (fastify: FastifyTypebox) {
 
     authFastify.post('/', { schema: schema.createProblemSchema }, createProblem);
     authFastify.post('/images', { schema: schema.uploadProblemImageSchema }, uploadProblemImage);
+
     authFastify.post('/:id/moderation', { schema: schema.moderateProblemSchema }, moderateProblem);
   });
+
+  fastify.get('/:id', {
+    schema: schema.getProblemSchema,
+    preHandler: fastify.jwtHelpers.tryAuthenticate,
+  }, getProblem);
 }
 
 async function getProblems (
