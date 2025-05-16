@@ -5,14 +5,14 @@ import fastifyEnv from '@fastify/env';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyCors from '@fastify/cors';
 
-import { EnvironmentSchema } from './schema';
-import { setupDrizzle } from './db';
-import { registerJwt } from './auth/jwt';
+import { EnvironmentSchema } from './schema.js';
+import { setupDrizzle } from './db/index.js';
+import { registerJwt } from './auth/jwt.js';
 
-import { AuthController } from './auth';
-import { UsersController } from './users';
-import { ProblemsController } from './problems';
-import { registerYandexMaps } from './services/yandex-maps';
+import { AuthController } from './auth/index.js';
+import { UsersController } from './users/index.js';
+import { ProblemsController } from './problems/index.js';
+import { registerYandexMaps } from './services/yandex-maps.js';
 
 const registerEnv = async (fastify: FastifyInstance) => {
   await fastify.register(fastifyEnv, {

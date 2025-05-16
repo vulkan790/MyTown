@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { FastifyReplyTypeBox, FastifyRequestTypeBox, FastifyTypebox } from '../types/typebox';
 
-import { reigsterAuthService } from './service';
-import * as schemas from './schemas';
+import { reigsterAuthService } from './service.js';
+import * as schemas from './schemas.js';
 
 export async function AuthController (fastify: FastifyTypebox) {
   await reigsterAuthService(fastify);

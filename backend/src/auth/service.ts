@@ -4,7 +4,7 @@ import { fastifyBcrypt } from 'fastify-bcrypt';
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
 import { eq } from 'drizzle-orm';
-import { users } from '../db/schema';
+import { users } from '../db/schema.js';
 
 import {
   LoginErrors,
