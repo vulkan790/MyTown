@@ -21,7 +21,7 @@ const { data: problems, isPending, isError } = useQuery({
             <RouterLink to="/report" class="first__button">Cообщить о проблеме</RouterLink>
           </div>
           <div class="right">
-            <img src="@/assets/images/first-photo.jpg" alt="Улица" class="first__photo">
+            <img src="@/images/first-photo.jpg" alt="Улица" class="first__photo">
           </div>
         </section>
         <section class="second">
@@ -43,7 +43,7 @@ const { data: problems, isPending, isError } = useQuery({
           <ul class="footer__menu-list footer__menu-list-logo">
             <li class="footer__menu-item">
               <a href="#" class="footer__menu-link">
-                <img src="@/assets/images/logo.svg" alt="logo">
+                <img src="@/images/logo.svg" alt="logo">
               </a>
             </li>
           </ul>
