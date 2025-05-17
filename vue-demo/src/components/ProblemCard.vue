@@ -1,6 +1,6 @@
 <script setup>
-import { defineProps, watchEffect } from 'vue'
-
+import { defineProps } from 'vue'
+import { RouterLink } from 'vue-router'
 const props = defineProps({
   id: Number,
   title: String,
@@ -15,38 +15,51 @@ const props = defineProps({
   },
   images: Array
 })
-// or
-// const props = defineProps(['title', 'description', 'status', 'createdAt', 'votes', 'author', 'images'])
-
-watchEffect(() => {
-  console.log('ProblemCard props:', props.author)
-})
-
-const names = {
+const statusNames = {
   'wait_for_solve': 'В ожидании решения',
   'solving': 'В процессе решения',
   'solved': 'Решено',
   'rejected': 'Отклонено',
   'on_moderation': 'На модерации'
 }
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('ru-RU', {
+    month: 'long',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
 </script>
-
 <template>
-  <article>
-    <h2>{{ title }}</h2>
-    <pre>{{ description }}</pre>
-    <p>Статус: {{ names[status] }}</p>
-    <p>Создан: {{ new Date(createdAt).toLocaleDateString('ru-RU', {
-      month: 'long',
-      day: '2-digit',
-      year: 'numeric',
-    }) }}</p>
-    <p>Голосов: {{ votes }}</p>
-    <p>Автор: {{ author.firstName }}</p>
-    <img v-for="image in images" :src="image" :alt="title" />
-
-    <RouterLink :to="{ name: 'problem', params: { id } }">
-      <button>Подробнее</button>
-    </RouterLink>
-  </article>
+  <div class="group">
+    <div class="group__text">
+      <h3 class="group__title">
+        <RouterLink :to="{ name: 'problem', params: { id } }">{{ title }}</RouterLink>
+      </h3>
+      <p class="description">{{ description }}</p>
+      <div class="group__statusbar">
+        <div class="group__statusbar-user">
+          <img 
+            :src="author.avatarUrl || '@/assets/images/user-default.png'" 
+            alt="user" 
+            class="group__statusbar-user-logo"
+          >
+          <span class="group__statusbar-user-name">{{ author.firstName }}</span>
+        </div>
+        <ul class="group__statusbar-status">
+          <li class="group__statusbar-status-item">{{ votes }} голосов</li>
+          <li class="group__statusbar-status-item">{{ statusNames[status] }}</li>
+          <li class="group__statusbar-status-item">{{ formatDate(createdAt) }}</li>
+        </ul>
+      </div>
+    </div>
+    <img 
+      v-if="images?.length" 
+      :src="images[0]" 
+      :alt="title" 
+      class="group__img"
+    >
+  </div>
 </template>
