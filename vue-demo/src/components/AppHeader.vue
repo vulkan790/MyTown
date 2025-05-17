@@ -7,16 +7,34 @@ const { user, isPending, isLoggedIn } = storeToRefs(useUser())
 </script>
 
 <template>
-  <header>
-    <span>Здесь логотип</span>
-    <RouterLink :to="{ name: 'home' }">На главную</RouterLink>
-    <RouterLink :to="{ name: 'problems-list' }">Все Проблемы</RouterLink>
-    <hr />
-    <template v-if="isPending || !isLoggedIn">Вы не авторизованы. <RouterLink to="/login">Войти</RouterLink></template>
-    <template v-else>
-      <span>Вы авторизованы как <RouterLink :to="{ name: 'profile' }">{{ user.firstName }} {{ user.lastName }}
-        </RouterLink></span>
-      <RouterLink :to="{ name: 'logout' }">Выйти</RouterLink>
-    </template>
+  <header class="header">
+    <div class="container">
+      <div class="header__inner">
+        <RouterLink :to="{ name: 'home' }" class="logo">
+          <img src="@/assets/images/logo.svg" alt="logo" class="logo__img">
+          <span class="logo-text">Мой Город</span>
+        </RouterLink>
+        <nav class="menu">
+          <ul class="menu__list">
+            <li class="menu__list-item" v-if="isPending || !isLoggedIn">
+              <RouterLink to="/login" class="menu__list-link">Войти</RouterLink>
+            </li>
+            <li class="menu__list-item-btn" v-if="isPending || !isLoggedIn">
+              <RouterLink to="/registration" class="menu__list-link-btn">Регистрация</RouterLink>
+            </li>
+            <template v-else>
+              <li class="menu__list-item">
+                <RouterLink :to="{ name: 'profile' }" class="menu__list-link">
+                  {{ user.firstName }} {{ user.lastName }}
+                </RouterLink>
+              </li>
+              <li class="menu__list-item-btn">
+                <RouterLink :to="{ name: 'logout' }" class="menu__list-link-btn">Выйти</RouterLink>
+              </li>
+            </template>
+          </ul>
+        </nav>
+      </div>
+    </div>
   </header>
 </template>
