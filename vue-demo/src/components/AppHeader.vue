@@ -11,7 +11,7 @@ const { user, isPending, isLoggedIn } = storeToRefs(useUser())
     <div class="container">
       <div class="header__inner">
         <RouterLink :to="{ name: 'home' }" class="logo">
-          <img src="@/assets/images/logo.svg" alt="logo" class="logo__img">
+          <img src="@/images/logo.svg" alt="logo" class="logo__img">
           <span class="logo-text">Мой Город</span>
         </RouterLink>
         <nav class="menu">
@@ -38,4 +38,4 @@ const { user, isPending, isLoggedIn } = storeToRefs(useUser())
     </div>
   </header>
 </template>
-<style src="./style.css"></style>
+<style src="@/style.css"></style>
