@@ -3,18 +3,15 @@ import { useQuery } from '@tanstack/vue-query'
 import { getHotProblems } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
 import ProblemCard from '@/components/ProblemCard.vue'
-
 const { data: problems, isPending, isError } = useQuery({
   queryKey: ['hotProblems'],
   queryFn: getHotProblems,
   refetchOnWindowFocus: false,
 })
 </script>
-
 <template>
   <div class="wrapper">
     <AppHeader />
-    
     <main class="main">
       <div class="container">
         <section class="first">
@@ -27,7 +24,6 @@ const { data: problems, isPending, isError } = useQuery({
             <img src="@/assets/images/first-photo.jpg" alt="Улица" class="first__photo">
           </div>
         </section>
-
         <section class="second">
           <h1 class="title">Горячие проблемы</h1>
           <template v-if="isPending">Загрузка...</template>
@@ -41,7 +37,6 @@ const { data: problems, isPending, isError } = useQuery({
         </section>
       </div>
     </main>
-
     <footer class="footer">
       <div class="container">
         <nav class="footer__menu">
@@ -70,5 +65,5 @@ const { data: problems, isPending, isError } = useQuery({
       </div>
     </footer>
   </div>
-  <style src="./style.css"></style>
 </template>
+<style src="./style.css"></style>
