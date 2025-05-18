@@ -25,7 +25,7 @@ const { data: problems, isPending, isError } = useQuery({
           </div>
         </section>
         <section class="second">
-          <h1 class="title">Все проблемы</h1>
+          <h1 class="title">Горячие проблемы</h1>
           <template v-if="isPending">Загрузка...</template>
           <template v-else-if="isError">Ошибка загрузки данных</template>
           <template v-else>
