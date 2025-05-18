@@ -42,7 +42,7 @@ const formatDate = (dateString) => {
       <div class="group__statusbar">
         <div class="group__statusbar-user">
           <img 
-            :src="author.avatarUrl || '@/assets/images/user-default.png'" 
+            :src="author.avatarUrl || '@/images/user-default.png'" 
             alt="user" 
             class="group__statusbar-user-logo"
           >
