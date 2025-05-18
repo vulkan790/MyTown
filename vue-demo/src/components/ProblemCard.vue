@@ -63,4 +63,3 @@ const formatDate = (dateString) => {
     >
   </div>
 </template>
-<style src="/src/style.css"></style>
