@@ -66,4 +66,3 @@ const { data: problems, isPending, isError } = useQuery({
     </footer>
   </div>
 </template>
-<style src="/src/style.css"></style>
