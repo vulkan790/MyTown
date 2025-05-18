@@ -38,4 +38,3 @@ const { user, isPending, isLoggedIn } = storeToRefs(useUser())
     </div>
   </header>
 </template>
-<style src="/src/style.css"></style>
