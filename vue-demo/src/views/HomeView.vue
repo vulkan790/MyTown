@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { getHotProblems } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
 import ProblemCard from '@/components/ProblemCard.vue'
+import AppFooter from '@/components/AppFooter.vue'
 const { data: problems, isPending, isError } = useQuery({
   queryKey: ['hotProblems'],
   queryFn: getHotProblems,
@@ -37,32 +38,6 @@ const { data: problems, isPending, isError } = useQuery({
         </section>
       </div>
     </main>
-    <footer class="footer">
-      <div class="container">
-        <nav class="footer__menu">
-          <ul class="footer__menu-list footer__menu-list-logo">
-            <li class="footer__menu-item">
-              <a href="#" class="footer__menu-link">
-                <img src="@/images/logo.svg" alt="logo">
-              </a>
-            </li>
-          </ul>
-          <ul class="footer__menu-list">
-            <li class="footer__menu-item">
-              <a href="mailto:mytown@mail.ru" class="footer__menu-link">mytown@mail.ru</a>
-            </li>
-            <li class="footer__menu-item">© 2025 Мой Город</li>
-          </ul>
-          <ul class="footer__menu-list">
-            <li class="footer__menu-item">
-              <a href="tel:+79528126969" class="footer__menu-link">8-952-812-69-69</a>
-            </li>
-            <li class="footer__menu-item">
-              <a href="#" class="footer__menu-link">Вконтакте</a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-    </footer>
+    <AppFooter />
   </div>
 </template>
