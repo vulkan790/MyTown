@@ -317,7 +317,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     type LocalComment = {
       id: number;
       content: string;
-      createdAt: Date;
+      createdAt: string;
       author: {
         firstName: string;
         lastName: string;
@@ -400,7 +400,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       comments: problem.comments.map((comment) => ({
         ...comment,
 
-        createdAt: comment.createdAt.toISOString(),
+        createdAt: comment.createdAt,
         author: comment.author
           ? {
               ...comment.author,
