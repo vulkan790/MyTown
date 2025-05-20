@@ -230,8 +230,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       .leftJoin(users, eq(problems.userId, users.id))
       .where(or(
         eq(problems.status, PROBLEM_STATUS.WAIT_FOR_SOLVE),
-        eq(problems.status, PROBLEM_STATUS.SOLVING),
-        eq(problems.status, PROBLEM_STATUS.SOLVED)
+        eq(problems.status, PROBLEM_STATUS.SOLVING)
       ))
       .orderBy(desc(votesCTE.votes))
       .limit(limit);
