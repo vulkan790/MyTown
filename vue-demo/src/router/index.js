@@ -5,6 +5,7 @@ import LogoutView from '@/views/LogoutView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ProblemsListView from '@/views/ProblemsListView.vue'
 import ProblemView from '@/views/ProblemView.vue'
+import CreateProblem from '@/views/CreateProblemView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,11 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: ProfileView,
+    },
+    {
+      path: '/report',
+      name: 'report',
+      component: CreateProblemView,
     },
     {
       path: '/problems',
