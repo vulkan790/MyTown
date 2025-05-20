@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify';
 
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
-import { eq, sql, sum } from 'drizzle-orm';
+import { desc, eq, sql, sum } from 'drizzle-orm';
 import { problems, problemVotes, problemImages, users } from '../db/schema.js';
 
 type RichUser = {
@@ -69,6 +69,7 @@ export const registerUserService = async (fastify: FastifyInstance) => {
         .leftJoin(problemVotesCTE, eq(problems.id, problemVotesCTE.problemId))
         .leftJoin(problemImagesCTE, eq(problems.id, problemImagesCTE.problemId))
         .where(eq(problems.userId, userId))
+        .orderBy(desc(problems.createdAt))
     );
 
     const userSelect = drizzle.with(problemsCTE).select({
