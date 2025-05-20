@@ -10,6 +10,7 @@ const UserProblem = Type.Object({
   images: Type.Array(Type.String()),
   status: Type.String(),
   votes: Type.Number(),
+  createdAt: Type.String(),
 });
 
 const User = Type.Object({

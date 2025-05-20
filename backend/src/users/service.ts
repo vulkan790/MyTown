@@ -23,6 +23,7 @@ type RichUser = {
     status: string;
     images: string[];
     votes: number;
+    createdAt: string;
   }[];
 };
 
@@ -64,6 +65,7 @@ export const registerUserService = async (fastify: FastifyInstance) => {
         images: problemImagesCTE.images,
         votes: problemVotesCTE.votes,
         userId: problems.userId,
+        createdAt: problems.createdAt,
       })
         .from(problems)
         .leftJoin(problemVotesCTE, eq(problems.id, problemVotesCTE.problemId))
@@ -88,6 +90,7 @@ export const registerUserService = async (fastify: FastifyInstance) => {
           latitude: number;
           longitude: number;
           status: string;
+          created_at: string;
           images: string[] | null;
           votes: number | null;
         }[] | null => n).as('user_problems'),
@@ -119,6 +122,7 @@ export const registerUserService = async (fastify: FastifyInstance) => {
         ...problem,
         images: problem.images ?? [],
         votes: problem.votes ?? 0,
+        createdAt: problem.created_at,
       })),
     };
 
