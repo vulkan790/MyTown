@@ -1,9 +1,8 @@
 <script setup>
 import { useQuery } from '@tanstack/vue-query'
 import { getHotProblems } from '@/api/client'
-import AppHeader from '@/components/AppHeader.vue'
 import ProblemCard from '@/components/ProblemCard.vue'
-import AppFooter from '@/components/AppFooter.vue'
+
 const { data: problems, isPending, isError } = useQuery({
   queryKey: ['hotProblems'],
   queryFn: getHotProblems,
@@ -11,9 +10,7 @@ const { data: problems, isPending, isError } = useQuery({
 })
 </script>
 <template>
-  <div class="wrapper">
-    <AppHeader />
-    <main class="main">
+  <main class="main">
       <div class="container">
         <section class="first">
           <div class="left">
@@ -37,7 +34,5 @@ const { data: problems, isPending, isError } = useQuery({
           </template>
         </section>
       </div>
-    </main>
-    <AppFooter />
-  </div>
+  </main>
 </template>
