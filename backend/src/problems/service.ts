@@ -230,8 +230,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       .leftJoin(users, eq(problems.userId, users.id))
       .where(or(
         eq(problems.status, PROBLEM_STATUS.WAIT_FOR_SOLVE),
-        eq(problems.status, PROBLEM_STATUS.SOLVING),
-        eq(problems.status, PROBLEM_STATUS.SOLVED)
+        eq(problems.status, PROBLEM_STATUS.SOLVING)
       ))
       .orderBy(desc(votesCTE.votes))
       .limit(limit);
@@ -317,7 +316,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     type LocalComment = {
       id: number;
       content: string;
-      createdAt: Date;
+      createdAt: string;
       author: {
         firstName: string;
         lastName: string;
@@ -400,7 +399,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       comments: problem.comments.map((comment) => ({
         ...comment,
 
-        createdAt: comment.createdAt.toISOString(),
+        createdAt: comment.createdAt,
         author: comment.author
           ? {
               ...comment.author,
