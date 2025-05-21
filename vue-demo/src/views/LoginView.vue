@@ -41,9 +41,9 @@ const form = useForm({
 
 </script>
 
-<template class="registration">
+<template> 
 
-  <main class="main">
+  <main class="main" style="background: linear-gradient(to left, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
     <div class="container">
       <section class="reg-container">
         <div class="login-section-in">
@@ -63,26 +63,18 @@ const form = useForm({
             </form.Field>
 
             <form.Field name="password">
-              <template v-slot="{ field }">
+              <template v-slot="{ field, meta }">
                 <div class="form-group password-group">
                   <label :for="field.name">Пароль</label>
                   <input :id="field.name" :name="field.name" :value="field.state.value" @blur="field.handleBlur"
                     @input="(e) => field.handleChange(e.target.value)" type="password" placeholder="Введите пароль" />
-                    <div v-if="meta.errors.length" class="error-message">
-                          {{ meta.errors[0] }}
-                    </div>
                 </div>
             </template>
             </form.Field>
 
             <div class="agreement-section">
               <div class="register-container">
-                <button 
-                  type="submit" 
-                  class="register-btn"
-                  :disabled="isLoggingIn">
-                  Авторизоваться
-                </button>
+                <button type="submit" class="register-btn" :disabled="isLoggingIn">Войти</button>
                 <router-link to="/registration" class="login-title">
                   Нет аккаунта?
                 </router-link>
