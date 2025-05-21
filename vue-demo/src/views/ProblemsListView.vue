@@ -3,6 +3,7 @@ import { ref, watchEffect } from 'vue'
 import { useInfiniteQuery } from '@tanstack/vue-query'
 
 import { getProblems } from '@/api/client'
+
 import ProblemCard from '@/components/ProblemCard.vue'
 import AppHeader from '@/components/AppHeader.vue'
 

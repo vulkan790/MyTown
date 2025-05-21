@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { getProblemById } from '@/api/client'
 import { useAuth } from '@/api/useAuth'
 
+import AppHeader from '@/components/AppHeader.vue'
 
 const { params } = useRoute()
 const auth = useAuth()

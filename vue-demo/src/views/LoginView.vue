@@ -6,6 +6,8 @@ import { useMutation } from '@tanstack/vue-query'
 import { login } from '@/api/client'
 import { useAuth } from '@/api/useAuth'
 
+import AppHeaderWithGradient from '@/components/AppHeaderWithGradient.vue'
+
 const auth = useAuth()
 const router = useRouter()
 
@@ -42,6 +44,7 @@ const form = useForm({
 </script>
 
 <template> 
+  <AppHeaderWithGradient />
 
   <main class="main" style="background: linear-gradient(to left, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
     <div class="container">
