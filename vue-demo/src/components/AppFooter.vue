@@ -28,9 +28,9 @@ const { user, isPending, isLoggedIn } = storeToRefs(useUser())
             <a href="tel:+79528126969" class="footer__menu-link">8-952-812-69-69</a>
           </li>
           <li class="footer__menu-item">
-            <RouterLink :to="{ name: 'social' }" class="footer__menu-link">
+            <a href="#" class="footer__menu-link">
               Вконтакте
-            </RouterLink>
+            </a>
           </li>
         </ul>
       </nav>
