@@ -41,7 +41,7 @@ const form = useForm({
 
 </script>
 
-<template>
+<template class="registration">
 
   <main class="main">
     <div class="container">
@@ -51,51 +51,28 @@ const form = useForm({
           <p class="second-text">Чтобы продолжить работу с сайтом, необходимо авторизоваться</p>
         </div>
         <div class="process-auth">
-          <form @submit.prevent="form.handleSubmit" class="form-selction">
-            <form.Field name="email" v-slot="{ field, meta }">
-              <div class="form-group">
-                <label for="email" class="label-control">Почта</label>
-                <input
-                  type="email"
-                  id="email"
-                  class="form-control"
-                  placeholder="Введите почту"
-                  :value="field.state.value"
-                  @input="(e) => field.handleChange(e.target.value)"
-                  @blur="field.handleBlur"/>
-                <div v-if="meta.errors.length" class="error-message">
-                  {{ meta.errors[0] }}
+          <form @submit.prevent.stop="form.handleSubmit">
+            <form.Field name="email">
+              <template  v-slot="{ field, meta }">
+                <div class="form-group">
+                  <label :for="field.name">Почта</label>
+                  <input :id="field.name" :name="field.name" :value="field.state.value" @blur="field.handleBlur"
+                    @input="(e) => field.handleChange(e.target.value)" type="email" placeholder="Введите email" />
                 </div>
-              </div>
+              </template>
             </form.Field>
 
-            <form.Field name="password" v-slot="{ field, meta }">
-              <div class="form-group password-group">
-                <label for="password" class="label-control">Пароль</label>
-                <div class="password-input-wrapper">
-                  <input
-                    :type="showPassword ? 'text' : 'password'"
-                    id="password"
-                    class="form-control"
-                    placeholder="Введите пароль"
-                    :value="field.state.value"
-                    @input="(e) => field.handleChange(e.target.value)"
-                    @blur="field.handleBlur"/>
-                  <button
-                    type="button"
-                    class="toggle-password"
-                    @click="showPassword = !showPassword"
-                    aria-label="Показать пароль">
-                    <img
-                      :src="showPassword ? '/images/EyeOpen.png' : '/images/EyeClosed.png'"
-                      alt="Показать пароль"
-                      class="eye-icon"/>
-                  </button>
+            <form.Field name="password">
+              <template v-slot="{ field }">
+                <div class="form-group password-group">
+                  <label :for="field.name">Пароль</label>
+                  <input :id="field.name" :name="field.name" :value="field.state.value" @blur="field.handleBlur"
+                    @input="(e) => field.handleChange(e.target.value)" type="password" placeholder="Введите пароль" />
+                    <div v-if="meta.errors.length" class="error-message">
+                          {{ meta.errors[0] }}
+                    </div>
                 </div>
-                <div v-if="meta.errors.length" class="error-message">
-                  {{ meta.errors[0] }}
-                </div>
-              </div>
+            </template>
             </form.Field>
 
             <div class="agreement-section">
