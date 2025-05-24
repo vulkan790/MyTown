@@ -31,10 +31,10 @@ const { data: problems, isPending, isError } = useQuery({
           <template v-if="isPending">Загрузка...</template>
           <template v-else-if="isError">Ошибка загрузки данных</template>
           <template v-else>
-            <div v-for="problem in problems" :key="problem.id" class="group">
+            <div v-for="problem in problems" :key="problem.id" class="abc" style="display: flex; justify-content: center; align-items: center;">
               <ProblemCard v-bind="problem" />
             </div>
-            <RouterLink to="/problems" class="second__btn-txt">Показать все проблемы</RouterLink>
+            <RouterLink to="/problems/all" class="second__btn-txt">Показать все проблемы</RouterLink>
           </template>
         </section>
       </div>

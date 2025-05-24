@@ -12,7 +12,7 @@ const limit = 1
 
 const { data, isPending, isFetching, fetchNextPage, hasNextPage } = useInfiniteQuery({
   queryKey: ['problems', page],
-  queryFn: ({ pageParam }) => getProblems(pageParam, limit),
+  queryFn: ({ pageParam = 1 }) => getProblems(pageParam, limit),
   initialPageParam: 1,
   getNextPageParam: (currentPage) => {
     console.log(currentPage)
@@ -36,16 +36,21 @@ watchEffect(() => {
 <template>
   <AppHeader />
 
-  <section>
-    <h2>Список проблем</h2>
-    <template v-if="isPending">Загрузка проблем</template>
-    <ul v-else-if="data">
-      <li v-for="problem in data.pages.flatMap((page) => page.problems)" :key="problem.id">
-        <ProblemCard v-bind="problem" :key="problem.id" />
-      </li>
-    </ul>
-    <button :disabled="!hasNextPage || isFetching" @click="fetchNextPage">
-      Загрузить еще
-    </button>
-  </section>
+  <main class="main">
+    <div class="container">
+      <section class="all__problems">
+        <h1 class="all__problems-title">Список проблем</h1>
+        <template v-if="isPending">Загрузка проблем</template>
+        <ul v-else-if="data" class="all__problems-list" style="display: flex; justify-content: center; align-items: center;">
+          <li v-for="problem in data.pages.flatMap((page) => page.problems)" :key="problem.id">
+            <ProblemCard v-bind="problem" :key="problem.id" />
+          </li>
+        </ul>
+        <button :disabled="!hasNextPage || isFetching" @click="fetchNextPage" class="button__txt">
+          Загрузить еще
+        </button>
+      </section>
+    </div>
+  </main>
+
 </template>

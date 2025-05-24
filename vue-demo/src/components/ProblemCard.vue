@@ -33,7 +33,7 @@ const formatDate = (dateString) => {
 }
 </script>
 <template>
-  <div class="group">
+  <div class="group" style="max-width: 1000px">
     <div class="group__text">
       <h3 class="group__title">
         <RouterLink :to="{ name: 'problem', params: { id } }">{{ title }}</RouterLink>
@@ -42,7 +42,7 @@ const formatDate = (dateString) => {
       <div class="group__statusbar">
         <div class="group__statusbar-user">
           <img 
-            :src="author.avatarUrl || '@/images/user-default.png'" 
+            :src="author.avatarUrl || '@/images/user-png.png'" 
             alt="user" 
             class="group__statusbar-user-logo"
           >

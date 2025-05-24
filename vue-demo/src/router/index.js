@@ -37,6 +37,7 @@ const router = createRouter({
     },
     {
       path: '/problems',
+      redirect: '/problems/all',
       children: [
         {
           path: 'all',

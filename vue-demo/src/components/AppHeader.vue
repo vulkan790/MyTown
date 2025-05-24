@@ -29,7 +29,7 @@ const { user, isPending, isLoggedIn } = storeToRefs(useUser())
                 </RouterLink>
               </li>
               <li class="menu__list-item-btn">
-                <RouterLink :to="{ name: 'logout' }" class="menu__list-link-btn">Выйти</RouterLink>
+                <RouterLink :to="{ name: 'logout' }" class="menu__list-link-btn" style="display: flex; justify-content: center; align-items: center;">Выйти</RouterLink>
               </li>
             </template>
           </ul>

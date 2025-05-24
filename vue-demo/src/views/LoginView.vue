@@ -77,7 +77,7 @@ const form = useForm({
 
             <div class="agreement-section">
               <div class="register-container">
-                <button type="submit" class="register-btn" :disabled="isLoggingIn">Войти</button>
+                <button type="submit" class="register-btn" :disabled="isLoggingIn"><a class="register-link">Войти</a></button>
                 <router-link to="/registration" class="login-title">
                   Нет аккаунта?
                 </router-link>
