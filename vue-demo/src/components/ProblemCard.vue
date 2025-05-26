@@ -1,6 +1,9 @@
 <script setup>
 import { defineProps } from 'vue'
 import { RouterLink } from 'vue-router'
+
+import ClassicAvatar from '@/images/user-png.png'
+
 const props = defineProps({
   id: Number,
   title: String,
@@ -42,7 +45,7 @@ const formatDate = (dateString) => {
       <div class="group__statusbar">
         <div class="group__statusbar-user">
           <img 
-            :src="author.avatarUrl || '@/images/user-png.png'" 
+            :src="author.avatarUrl || ClassicAvatar" 
             alt="user" 
             class="group__statusbar-user-logo"
           >

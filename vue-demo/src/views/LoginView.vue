@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useForm } from '@tanstack/vue-form'
 import { useMutation } from '@tanstack/vue-query'
@@ -8,8 +9,16 @@ import { useAuth } from '@/api/useAuth'
 
 import AppHeaderWithGradient from '@/components/AppHeaderWithGradient.vue'
 
+import EyeClosed from '@/images/EyeClosed.png'
+import EyeOpened from '@/images/EyeOpened.png'
+
 const auth = useAuth()
 const router = useRouter()
+
+const isPasswordVisible = ref(false)
+const togglePasswordVisibility = () => {
+  isPasswordVisible.value = !isPasswordVisible.value
+}
 
 const { isPending: isLoggingIn, mutateAsync } = useMutation({
   mutationFn: ({ email, password }) => login(email, password),
@@ -69,8 +78,31 @@ const form = useForm({
               <template v-slot="{ field, meta }">
                 <div class="form-group password-group">
                   <label :for="field.name">Пароль</label>
-                  <input :id="field.name" :name="field.name" :value="field.state.value" @blur="field.handleBlur"
-                    @input="(e) => field.handleChange(e.target.value)" type="password" placeholder="Введите пароль" />
+                  <div class="password-input-wrapper">
+                    <input 
+                      :id="field.name" 
+                      :name="field.name" 
+                      :value="field.state.value" 
+                      @blur="field.handleBlur"
+                      @input="(e) => field.handleChange(e.target.value)" 
+                      :type="isPasswordVisible ? 'text' : 'password'" 
+                      placeholder="Введите пароль" 
+                      class="form-control"
+                    />
+                    <button 
+                      type="button" 
+                      class="toggle-password" 
+                      @click="togglePasswordVisibility" 
+                      aria-label="Показать пароль"
+                      >
+                      <img 
+                        :src="isPasswordVisible ? EyeOpened : EyeClosed" 
+                        :style="{height: isPasswordVisible ? '25px' : '30px'}"
+                        alt="Иконка глаза" 
+                        class="eye-icon"
+                      />
+                    </button>
+                  </div>
                 </div>
             </template>
             </form.Field>
