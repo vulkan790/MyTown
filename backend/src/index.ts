@@ -13,6 +13,7 @@ import { AuthController } from './auth/index.js';
 import { UsersController } from './users/index.js';
 import { ProblemsController } from './problems/index.js';
 import { registerYandexMaps } from './services/yandex-maps.js';
+import { registerEmail } from './services/email.js';
 
 const registerEnv = async (fastify: FastifyInstance) => {
   await fastify.register(fastifyEnv, {
@@ -62,6 +63,7 @@ const main = async () => {
   registerDrizzle(fastify);
   registerJwt(fastify);
   registerYandexMaps(fastify);
+  registerEmail(fastify);
 
   // register controllers
   await fastify.register(AuthController, {
