@@ -6,5 +6,7 @@ export const EnvironmentSchema = Type.Object({
   JWT_SECRET: Type.String(),
   YANDEX_SUGGEST_API_KEY: Type.String(),
   YANDEX_GEOCODER_API_KEY: Type.String(),
+
+  EMAIL_FROM: Type.String(),
   MAILER_TOKEN: Type.String(),
 });
