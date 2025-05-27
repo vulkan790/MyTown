@@ -99,7 +99,9 @@ const form = useForm({
                             <template v-slot="{ field }">
                                 <div class="form-group">
                                     <label :for="field.name">Отчество (если не имеете, то оставьте поле пустым)</label>
-                                    <input :id="field.name" :name="field.name" :value="field.state.value"
+                                    <input :id="field.name"
+:nam
+e="field.name" :value="field.state.value"
                                         @blur="field.handleBlur" @input="(e) => field.handleChange(e.target.value)"
                                         type="text" placeholder="Введите отчество" />
                                 </div>
@@ -154,7 +156,8 @@ const form = useForm({
                                             <img :src="isConfirmPasswordVisible ? EyeOpened : EyeClosed"
                                                 :style="{ height: isConfirmPasswordVisible ? '25px' : '30px' }"
                                                 alt="Иконка глаза" class="eye-icon" />
-                                        </button>
+                                    </button>
+
                                     </div>
                                     <div v-if="meta.touched && meta.error" class="error-message">{{ meta.error }}</div>
                                 </div>
