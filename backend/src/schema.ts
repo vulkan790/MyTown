@@ -9,4 +9,6 @@ export const EnvironmentSchema = Type.Object({
 
   EMAIL_FROM: Type.String(),
   MAILER_TOKEN: Type.String(),
+  VERIFY_EMAIL_TEMPLATE: Type.String(),
+  RESET_PASSWORD_TEMPLATE: Type.String(),
 });
