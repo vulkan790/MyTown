@@ -9,6 +9,7 @@ export async function AuthController (fastify: FastifyTypebox) {
 
   fastify.post('/login', { schema: schemas.loginSchema }, loginEndpoint);
   fastify.post('/register', { schema: schemas.registerSchema }, registerEndpoint);
+  fastify.post('/verify', { schema: schemas.verifyEmailSchema }, verifyEmail);
 }
 
 async function registerEndpoint (
@@ -61,5 +62,29 @@ async function loginEndpoint (
   reply.statusCode = 400;
   return {
     error: loginResult.error,
+  };
+}
+
+async function verifyEmail (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schemas.VerifyEmailSchema>,
+  reply: FastifyReplyTypeBox<schemas.VerifyEmailSchema>
+) {
+  const { token } = request.body;
+
+  const verificationResult = await this.authService.verifyEmail(token);
+  if (verificationResult.isOk()) {
+    await reply.status(204).send();
+    return;
+  }
+
+  if (verificationResult.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: verificationResult.error,
   };
 }

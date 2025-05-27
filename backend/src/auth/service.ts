@@ -4,12 +4,13 @@ import { fastifyBcrypt } from 'fastify-bcrypt';
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
 import { eq } from 'drizzle-orm';
-import { users } from '../db/schema.js';
+import { emailVerifications, users } from '../db/schema.js';
 
 import {
   LoginErrors,
   RegisterBody,
   RegisterErrors,
+  VerifyEmailErrors,
 } from './schemas';
 
 type RegisterResult = Result<
@@ -118,9 +119,48 @@ export const reigsterAuthService = async (fastify: FastifyInstance) => {
     return ok(token);
   };
 
+  const verifyEmail = async (token: string): Promise<Result<void, VerifyEmailErrors | 'unknown_error'>> => {
+    const tokenPayload = fastify.jwt.decode<{ email: string; userId: number; }>(token);
+    if (tokenPayload === null) {
+      return err('invalid_token');
+    }
+
+    try {
+      fastify.jwt.verify(token);
+    } catch {
+      return err('token_expired');
+    }
+
+    const transaction = drizzle.transaction(async (tx) => {
+      const usersList = await tx.select({
+        email: users.email,
+      })
+        .from(users)
+        .where(eq(users.id, tokenPayload.userId))
+        .limit(1);
+
+      if (!usersList.at(0) || usersList.at(0)?.email !== tokenPayload.email) {
+        return err('invalid_token');
+      }
+
+      await tx.insert(emailVerifications).values({
+        email: tokenPayload.email,
+        userId: tokenPayload.userId,
+      });
+
+      return ok();
+    }).catch((e) => {
+      console.error('Unknown error during email verification', e);
+      return err('unknown_error');
+    });
+
+    return await transaction;
+  };
+
   fastify.decorate('authService', {
     register,
     login,
+    verifyEmail,
   });
 };
 
@@ -129,6 +169,7 @@ declare module 'fastify' {
     authService: {
       register: (registerPayload: RegisterBody) => Promise<Result<string, RegisterErrors | 'unknown_error'>>;
       login: (email: string, password: string) => Promise<Result<string, LoginErrors | 'unknown_error'>>;
+      verifyEmail: (token: string) => Promise<Result<void, VerifyEmailErrors | 'unknown_error'>>;
     };
   }
 }
