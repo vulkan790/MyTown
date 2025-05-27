@@ -6,6 +6,8 @@ import { useMutation } from '@tanstack/vue-query'
 import { register } from '@/api/client'
 import { useAuth } from '@/api/useAuth'
 
+import AppHeaderWithGradient from '@/components/AppHeaderWithGradient.vue'
+
 import EyeClosed from '@/images/EyeClosed.png'
 import EyeOpened from '@/images/EyeOpened.png'
 
@@ -166,16 +168,25 @@ const form = useForm({
                             </template>
                         </form.Field>
 
-
-                        <div class="agreement-section">
-                            <label class="agreement-checkbox">
-                                <input type="checkbox" v-model="form.agreement" id="agreement">
-                                <span class="checkmark"></span>
-                                <span class="agreement-text">Принять пользовательские соглашения</span>
-                            </label>
-                            <div v-if="errors.agreement" class="error-message">{{ errors.agreement }}</div>
-                        </div>
-
+                        <form.Field name="agreement" v-slot="{ field, meta }">
+                            <div class="agreement-section">
+                                <label class="agreement-checkbox">
+                                    <input 
+                                        type="checkbox" 
+                                        :id="field.name"
+                                        :name="field.name"
+                                        :checked="field.state.value"
+                                        @change="(e) => field.handleChange(e.target.checked)"
+                                        @blur="field.handleBlur"
+                                    >
+                                    <span class="checkmark"></span>
+                                    <span class="agreement-text">Принять пользовательские соглашения</span>
+                                </label>
+                                <div v-if="meta && meta.touched && meta.error" class="error-message">
+                                    {{ meta.error }}
+                                </div>
+                            </div>
+                        </form.Field>
 
                         <div class="register-container">
                             <button type="submit" class="register-btn"
