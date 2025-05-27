@@ -207,6 +207,32 @@ query (всё, что идет после вопроса в конце URL), pat
 }
 ```
 
+## POST /api/auth/verify
+
+Верификация email пользователя
+
+### Request
+
+**Body**
+```json
+{
+  "token": "token-from-query-params"
+}
+```
+
+### Response
+
+**204 No Content**
+```json
+// success
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "" // token_expired
+}
+
 ## GET /api/users/me
 
 Получить информацию о текущем пользователе.
