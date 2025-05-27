@@ -19,6 +19,8 @@ type RegisterResult = Result<
 
 export const reigsterAuthService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
+  const { DOMAIN } = fastify.config;
+
   await fastify.register(fastifyBcrypt, {
     saltWorkFactor: 10,
   });
@@ -48,6 +50,18 @@ export const reigsterAuthService = async (fastify: FastifyInstance) => {
 
         role: 'user',
       }).returning().then((users) => users[0]);
+
+      const emailVerifyToken = fastify.jwt.sign({
+        userId: user.id,
+        email: user.email,
+      }, {
+        expiresIn: '1d',
+      });
+
+      const verifyEmailUrl = new URL('/verify-email', DOMAIN);
+      verifyEmailUrl.searchParams.set('token', emailVerifyToken);
+
+      fastify.email.sendVerificationEmail(user.email, verifyEmailUrl.toString());
 
       const token = fastify.jwtHelpers.sign({
         userId: user.id,
