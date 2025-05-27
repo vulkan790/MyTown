@@ -6,6 +6,8 @@ import { useMutation } from '@tanstack/vue-query'
 import { register } from '@/api/client'
 import { useAuth } from '@/api/useAuth'
 
+import AppHeaderWithGradientReg from '@/components/AppHeaderWithGradientReg.vue'
+
 import EyeClosed from '@/images/EyeClosed.png'
 import EyeOpened from '@/images/EyeOpened.png'
 
@@ -59,17 +61,14 @@ const form = useForm({
 </script>
 
 <template>
-    <AppHeaderWithGradient />
+    <AppHeaderWithGradientReg />
 
 
     <main class="main"
-        style="background: linear-gradient(to left, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
+        style="background: linear-gradient(to right, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
         <div class="container">
             <section class="reg-container">
-                <div class="registration-section">
-                    <p class="main-text-registration"><strong>Регистрация</strong></p>
-                    <p class="second-text">Пожалуйста, заполните все поля для регистрации</p>
-                </div>
+                
                 <div class="process-reg">
                     <form @submit.prevent.stop="form.handleSubmit">
                         <form.Field name="lastname">
@@ -96,8 +95,6 @@ const form = useForm({
                                 </div>
                             </template>
                         </form.Field>
-
-
                         <form.Field name="middlename">
                             <template v-slot="{ field }">
                                 <div class="form-group">
@@ -111,13 +108,13 @@ const form = useForm({
 
 
                         <form.Field name="email">
-                            <template v-slot="{ field, meta }">
+                            <template v-slot="{ field }">
                                 <div class="form-group">
                                     <label :for="field.name">Почта</label>
                                     <input :id="field.name" :name="field.name" :value="field.state.value"
                                         @blur="field.handleBlur" @input="(e) => field.handleChange(e.target.value)"
                                         type="email" placeholder="Введите почту" />
-                                    <div v-if="meta.touched && meta.error" class="error-message">{{ meta.error }}</div>
+                                    <div v-if="field.state.meta.isTouched && field.state.meta.errors.lengths" class="error-message">{{ meta.error }}</div>
                                 </div>
                             </template>
                         </form.Field>
@@ -143,8 +140,6 @@ const form = useForm({
                                 </div>
                             </template>
                         </form.Field>
-
-
                         <form.Field name="confirmPassword">
                             <template v-slot="{ field, meta }">
                                 <div class="form-group password-group">
@@ -166,25 +161,37 @@ const form = useForm({
                             </template>
                         </form.Field>
 
-
-                        <div class="agreement-section">
-                            <label class="agreement-checkbox">
-                                <input type="checkbox" v-model="form.agreement" id="agreement">
-                                <span class="checkmark"></span>
-                                <span class="agreement-text">Принять пользовательские соглашения</span>
-                            </label>
-                            <div v-if="errors.agreement" class="error-message">{{ errors.agreement }}</div>
-                        </div>
-
+                        <form.Field name="agreement" v-slot="{ field, meta }">
+                            <div class="agreement-section">
+                                <label class="agreement-checkbox">
+                                    <input 
+                                        type="checkbox" 
+                                        :id="field.name"
+                                        :name="field.name"
+                                        :checked="field.state.value"
+                                        @change="(e) => field.handleChange(e.target.checked)"
+                                        @blur="field.handleBlur"
+                                    >
+                                    <span class="checkmark"></span>
+                                    <span class="agreement-text">Принять пользовательские соглашения</span>
+                                </label>
+                                <!-- <div vы -->
+                            </div>
+                        </form.Field>
 
                         <div class="register-container">
                             <button type="submit" class="register-btn"
-                                :disabled="isLoggingIn">Зарегистрироваться</button>
+                                :disabled="isLoggingIn" style="color: white; border: none; font-size: 20px;">Зарегистрироваться</button>
                             <router-link to="/autorization" class="login-title">
                                 Уже имеете аккаунт?
                             </router-link>
                         </div>
+
                     </form>
+                </div>
+                <div class="login-section">
+                    <p class="main-text"><strong>Пользователь!</strong></p>
+                    <p class="second-text">Чтобы продолжить работу с сайтом, необходимо зарегестрироваться и принять пользовательские соглашения.</p>
                 </div>
             </section>
         </div>
