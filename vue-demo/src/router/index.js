@@ -9,10 +9,16 @@ import ProfileView from '@/views/ProfileView.vue'
 import ProblemsListView from '@/views/ProblemsListView.vue'
 import ProblemView from '@/views/ProblemView.vue'
 import CreateProblemView from '@/views/CreateProblemView.vue'
+import RegistrationView from '@/views/RegistrationView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/registration',
+      name: 'registration',
+      component: RegistrationView,
+    },
     {
       path: '/',
       name: 'home',
