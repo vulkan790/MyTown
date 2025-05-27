@@ -230,7 +230,7 @@ query (всё, что идет после вопроса в конце URL), pat
 **400 Bad Request**
 ```json
 {
-  "error": "" // token_expired
+  "error": "" // token_expired | invalid_token
 }
 
 ## GET /api/users/me
