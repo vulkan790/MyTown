@@ -35,14 +35,26 @@ const { isPending: isLoggingIn, mutateAsync } = useMutation({
 })
 
 const form = useForm({
+    validators: {
+        confirmPassword: ({ value, fieldApi }) => 
+            value !== fieldApi.form.getFieldValue('password') 
+                ? 'Пароли не совпадают' 
+                : undefined
+    },
     onSubmit: async ({ value: registrationPayload }) => {
+        if (!registrationPayload.agreement) {
+            alert('Необходимо принять пользовательское соглашение');
+            return;
+        }
         try {
             await mutateAsync(registrationPayload)
         } catch (e) {
             console.error(e)
             if (e.name === 'HTTPError') {
-                if (e.response.status === 400) {
-                    alert('Ошибка регистрации. Пожалуйста, проверьте введенные данные.')
+                if (e.response?.status === 409) {
+                    alert('Пользователь с такой почтой уже существует');
+                } else {
+                    alert('Ошибка регистрации. Пожалуйста, проверьте данные');
                 }
             }
         }

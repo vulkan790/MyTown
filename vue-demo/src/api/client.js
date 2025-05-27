@@ -180,11 +180,25 @@ export function getAddressSuggestions(address, token) {
  * @param {string} token
  * @returns {Promise<UploadImageResponse>}
  */
-export function uploadProblemImage(formData, token) {
-  return api.post('problems/images', {
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  }).json()
+export const uploadProblemImage = async (formData, token) => {
+  try {
+    const response = await fetch(`${API_URL}/problems/images`, {
+      method: 'POST',
+      headers: { 
+        Authorization: `Bearer ${token}` 
+      },
+      body: formData
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Ошибка загрузки файла')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    throw new Error(error.message)
+  }
 }
 
 /**
@@ -197,11 +211,26 @@ export function uploadProblemImage(formData, token) {
  * @param {string} token
  * @returns {Promise<CreateProblemResponse>}
  */
-export function createProblem(problemData, token) {
-  return api.post('problems', {
-    headers: { Authorization: `Bearer ${token}` },
-    json: problemData,
-  }).json()
+export const createProblem = async (problemData, token) => {
+  try {
+    const response = await fetch(`${API_URL}/problems`, {
+      method: 'POST',
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify(problemData)
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Ошибка создания проблемы')
+    }
+    
+    return await response.json()
+  } catch (error) {
+    throw new Error(error.message)
+  }
 }
 
 /**
