@@ -8,12 +8,12 @@ import fastifyCors from '@fastify/cors';
 import { EnvironmentSchema } from './schema.js';
 import { setupDrizzle } from './db/index.js';
 import { registerJwt } from './auth/jwt.js';
+import { registerYandexMaps } from './services/yandex-maps.js';
+import { registerEmail } from './services/email.js';
 
 import { AuthController } from './auth/index.js';
 import { UsersController } from './users/index.js';
 import { ProblemsController } from './problems/index.js';
-import { registerYandexMaps } from './services/yandex-maps.js';
-import { registerEmail } from './services/email.js';
 
 const registerEnv = async (fastify: FastifyInstance) => {
   await fastify.register(fastifyEnv, {
