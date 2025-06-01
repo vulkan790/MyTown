@@ -28,6 +28,7 @@ a {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1 0 auto;
 }
 
 .container {
@@ -90,9 +91,12 @@ body {
 }
 
 .menu__list-link-btn {
-  display: flex;
-  color: #fff;
-  padding: 13px;
+  display: flex; 
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  text-align: center;
+  color: white;
 }
 
 
@@ -102,6 +106,7 @@ body {
   background-color: #323131;
   padding: 60px 0;
   color: #fff;
+  margin-top: 110px;
 }
 
 .footer__menu {
@@ -705,6 +710,94 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.confirmation-step {
+  padding: 40px;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.confirmation-step h2 {
+  font-size: 32px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.confirmation-step p {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 15px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.confirmation-step strong {
+  color: #003357;
+  font-weight: 600;
+}
+
+.confirmation-code-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid black;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+  margin-bottom: 10px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.confirmation-code-input:focus {
+  outline: none;
+  border-color: #3786BE;
+}
+
+.resend-code-btn {
+  background: none;
+  border: none;
+  color: #003357;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 5px 10px;
+  transition: opacity 0.3s;
+}
+
+.resend-code-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.resend-code-btn:disabled {
+  color: #aaa;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.confirmation-step .register-container {
+  margin-top: 30px;
+}
+
+.confirmation-step .login-title {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #003357;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  margin-top: 15px;
+  padding: 5px;
+}
+
+.confirmation-step .login-title:hover {
+  text-decoration: underline;
 }
 
 /*autorization*/

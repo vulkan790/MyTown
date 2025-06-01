@@ -151,16 +151,31 @@ export function register(userData) {
 }
 
 /**
+ * Confirm email registration.
+ * @param {Object} confirmData
+ * @param {string} confirmData.email
+ * @param {string} confirmData.code
+ * @param {string} confirmData.password
+ * @param {string} confirmData.firstName
+ * @param {string} confirmData.lastName
+ * @param {string} [confirmData.middleName]
+ * @param {Gender} confirmData.gender
+ * @returns {Promise<LoginResponse>}
+ */
+export function confirmRegistration(confirmData) {
+  return api.post('auth/confirm', { json: confirmData }).json()
+}
+
+/**
  * Fetch the current user's details.
  * @param {string} token
  * @returns {Promise<CurrentUserResponse>}
  */
 export function getCurrentUser(token) {
-  return api.get('users/me', {
+  return api.get('users/me', { 
     headers: { Authorization: `Bearer ${token}` },
   }).json()
 }
-
 /**
  * Fetch address suggestions.
  * @param {string} address
@@ -168,7 +183,7 @@ export function getCurrentUser(token) {
  * @returns {Promise<AddressSuggestion[]>}
  */
 export function getAddressSuggestions(address, token) {
-  return api.get('problems/address-suggest', {
+  return api.get('problems/address-suggest', { 
     headers: { Authorization: `Bearer ${token}` },
     searchParams: { address },
   }).json()
@@ -182,22 +197,34 @@ export function getAddressSuggestions(address, token) {
  */
 export const uploadProblemImage = async (formData, token) => {
   try {
-    const response = await fetch(`${API_URL}/problems/images`, {
-      method: 'POST',
+    const response = await api.post('problems/images', {
       headers: { 
-        Authorization: `Bearer ${token}` 
+        Authorization: `Bearer ${token}`,
       },
       body: formData
-    })
+    });
+
+    const data = await response.json();
+    console.log('Upload response:', data);
+    return data;
     
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Ошибка загрузки файла')
+  } catch (error) {
+    if (error.response) {
+      const errorData = await error.response.json();
+      
+      if (error.response.status === 400) {
+        throw new Error(errorData.error || 'Invalid file format');
+      }
+      if (error.response.status === 401) {
+        throw new Error('Authorization required');
+      }
+      if (error.response.status === 500) {
+        throw new Error(`Server error: ${errorData.detail || 'Check server logs'}`);
+      }
     }
     
-    return await response.json()
-  } catch (error) {
-    throw new Error(error.message)
+    console.error('Full upload error:', error);
+    throw new Error('File upload failed. Please try smaller files.');
   }
 }
 
@@ -213,23 +240,27 @@ export const uploadProblemImage = async (formData, token) => {
  */
 export const createProblem = async (problemData, token) => {
   try {
-    const response = await fetch(`${API_URL}/problems`, {
-      method: 'POST',
+    const response = await api.post('problems', {
       headers: { 
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json' 
       },
-      body: JSON.stringify(problemData)
-    })
+      json: problemData
+    });
     
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Ошибка создания проблемы')
-    }
-    
-    return await response.json()
+    return response.json();
   } catch (error) {
-    throw new Error(error.message)
+    if (error.response) {
+      const errorData = await error.response.json();
+      console.error('Create problem error details:', errorData);
+      
+      if (error.response.status === 400) {
+        throw new Error(errorData.error || JSON.stringify(errorData.errors));
+      }
+      if (error.response.status === 401) {
+        throw new Error('Authorization required');
+      }
+    }
+    throw error;
   }
 }
 

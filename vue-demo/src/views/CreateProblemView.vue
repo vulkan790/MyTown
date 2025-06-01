@@ -12,6 +12,8 @@ const router = useRouter()
 const authStore = useAuth()
 const { token } = storeToRefs(authStore)
 
+const UPLOAD_FILES_ENABLED = false
+
 onMounted(() => {
   if (!token.value) {
     router.replace('/login')
@@ -35,10 +37,46 @@ const MAX_FILE_COUNT = 5
 const MAX_TOTAL_SIZE_MB = 20
 const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
 
-const handleFileUpload = (event) => {
-  if (!token.value) return router.replace('/login')
+const generateProblemUri = (title) => {
+  const translitMap = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+    'я': 'ya',
+    ' ': '-', '_': '-', '.': '-', ',': '-', '!': '', '?': '', '(': '', ')': '', '[': '', ']': ''
+  };
   
+  let uri = title
+    .toLowerCase()
+    .split('')
+    .map(char => translitMap[char] || (char.match(/[a-z0-9-]/) ? char : '-'))
+    .join('')
+    .replace(/-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '')
+    .slice(0, 30);
+  
+  const timestamp = Date.now().toString(36).slice(-4);
+  const randomStr = Math.random().toString(36).substring(2, 6);
+  
+  return `${uri}-${timestamp}${randomStr}`;
+}
+
+const handleFileUpload = (event) => {
+  if (!token.value) {
+    router.replace('/login')
+    return
+  }
+
+  if (!UPLOAD_FILES_ENABLED) {
+    errorMessage.value = 'Загрузка файлов временно отключена. Пожалуйста, попробуйте позже.'
+    event.target.value = ''
+    return
+  }
+
   const newFiles = Array.from(event.target.files)
+  
   if (files.value.length + newFiles.length > MAX_FILE_COUNT) {
     errorMessage.value = `Максимум ${MAX_FILE_COUNT} файлов`
     event.target.value = ''
@@ -52,11 +90,28 @@ const handleFileUpload = (event) => {
     return
   }
 
+  const validTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'video/mp4',
+    'video/avi',
+    'video/quicktime'
+  ]
+  
+  const invalidFiles = newFiles.filter(file => !validTypes.includes(file.type))
+  
+  if (invalidFiles.length > 0) {
+    const invalidNames = invalidFiles.map(f => f.name).join(', ')
+    errorMessage.value = `Недопустимые форматы файлов: ${invalidNames}`
+    event.target.value = ''
+    return
+  }
+
   files.value = [...files.value, ...newFiles]
   errorMessage.value = ''
   event.target.value = ''
 }
-
 
 const removeFile = (index) => {
   files.value.splice(index, 1)
@@ -76,7 +131,14 @@ const formatFileSize = (bytes) => {
 }
 
 const uploadFiles = async () => {
-  if (!token.value) return router.replace('/login')
+  if (!token.value) {
+    router.replace('/login')
+    return []
+  }
+
+  if (!UPLOAD_FILES_ENABLED) {
+    return []
+  }
   
   const imageIds = []
   for (const file of files.value) {
@@ -85,10 +147,9 @@ const uploadFiles = async () => {
     
     try {
       const response = await uploadProblemImage(formData, token.value)
-      if (!response?.id) throw new Error('Ошибка загрузки файла')
       imageIds.push(response.id)
     } catch (error) {
-      errorMessage.value = error.message
+      errorMessage.value = 'Ошибка загрузки файла: ' + error.message
       throw error
     }
   }
@@ -98,19 +159,23 @@ const uploadFiles = async () => {
 const fetchAddressSuggestions = debounce(async (query) => {
   if (!query.trim() || !token.value) {
     addressSuggestions.value = []
+    showSuggestions.value = false
     return
   }
   
   try {
     const suggestions = await getAddressSuggestions(query, token.value)
-    addressSuggestions.value = suggestions
-    showSuggestions.value = true
+    addressSuggestions.value = suggestions || []
+    showSuggestions.value = suggestions.length > 0
   } catch (error) {
-    if (error.response?.status === 401) {
+    if (error.message === 'Требуется авторизация') {
       authStore.removeToken()
       router.push('/login')
+    } else {
+      console.error('Ошибка получения подсказок:', error)
     }
-    console.error('Ошибка получения подсказок:', error)
+    addressSuggestions.value = []
+    showSuggestions.value = false
   }
 }, 300)
 
@@ -131,37 +196,73 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
 const handleSubmit = async () => {
   try {
-    if (!token.value) return router.replace('/login')
+    if (!token.value) {
+      router.replace('/login')
+      return
+    }
 
     isSubmitting.value = true
     errorMessage.value = ''
 
-    if (!form.value.title.trim() || !form.value.addressUri.trim() || !form.value.description.trim()) {
-      throw new Error('Заполните все обязательные поля')
+    if (!form.value.title.trim()) {
+      throw new Error('Введите название проблемы')
+    }
+    if (!form.value.addressUri) {
+      throw new Error('Выберите адрес из предложенных вариантов')
+    }
+    if (!form.value.description.trim()) {
+      throw new Error('Введите описание проблемы')
     }
 
-    const imageIds = await uploadFiles()
+    const uploadResults = await uploadFiles()
+    const imageIds = uploadResults.map(item => item.id)
     
     const problemData = {
       title: form.value.title,
-      address: form.value.addressUri,
       description: form.value.description,
+      address: form.value.addressUri,
+      uri: generateProblemUri(form.value.title),
       images: imageIds,
     }
 
-    const response = await createProblem(problemData, token.value)
-    if (!response?.problem?.id) {
-      throw new Error('Ошибка создания проблемы: неверный ответ сервера')
+    console.log('Sending problem data:', problemData)
+
+    try {
+      const response = await createProblem(problemData, token.value)
+      
+      if (!response?.id) {
+        throw new Error('Ошибка создания проблемы: неверный ответ сервера')
+      }
+      
+      router.push({ name: 'problem', params: { id: response.id } })
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        const textResponse = await error.response?.text();
+        console.error('Raw server response:', textResponse);
+        
+        throw new Error('Ошибка обработки ответа сервера: ' + (textResponse || error.message))
+      }
+      throw error;
     }
     
-    router.push({ path: `/problems/${response.problem.id}`, replace: true })
-
   } catch (error) {
-    if (error.response?.status === 401) {
+    if (error.message === 'Authorization required' || error.message === 'Требуется авторизация') {
       authStore.removeToken()
       router.replace('/login')
     } else {
-      errorMessage.value = error.message || 'Ошибка при создании проблемы'
+      console.error('Full error:', error)
+      
+      let userMessage = error.message || 'Произошла ошибка при создании проблемы';
+      
+      if (error.response) {
+        if (error.response.status === 500) {
+          userMessage = 'Ошибка сервера. Пожалуйста, попробуйте позже или свяжитесь с поддержкой.';
+        } else if (error.response.data?.message) {
+          userMessage = error.response.data.message;
+        }
+      }
+      
+      errorMessage.value = userMessage;
     }
   } finally {
     isSubmitting.value = false
@@ -195,7 +296,7 @@ const handleSubmit = async () => {
               <input
                 type="text"
                 id="problem-address"
-                v-model.trim="form.addressDisplay"
+                v-model="form.addressDisplay"
                 @input="fetchAddressSuggestions($event.target.value)"
                 placeholder="Укажите место проблемы"
                 required
@@ -211,13 +312,19 @@ const handleSubmit = async () => {
                   <small>{{ suggestion.subtitle }}</small>
                 </li>
               </ul>
+              <div v-if="form.addressUri" class="address-hint">
+                Адрес подтвержден ✔
+              </div>
+              <div v-else-if="form.addressDisplay" class="address-warning">
+                Выберите адрес из списка
+              </div>
             </div>
           </div>
 
           <div class="file-upload-group">
-            <label>Прикрепите материалы</label>
+            <label>Прикрепите материалы <span v-if="!UPLOAD_FILES_ENABLED" class="temp-disabled-hint">(временно отключено)</span></label>
             <div class="file-input-wrapper">
-              <label for="file-upload" class="upload-btn">
+              <label for="file-upload" class="upload-btn" :class="{ disabled: !UPLOAD_FILES_ENABLED }">
                 {{ files.length ? 'Добавить ещё' : 'Выбрать файлы' }}
               </label>
               <input
@@ -226,8 +333,14 @@ const handleSubmit = async () => {
                 multiple
                 accept="image/*, video/*"
                 hidden
+                :disabled="!UPLOAD_FILES_ENABLED"
                 @change="handleFileUpload">
-              <div v-if="files.length" class="file-list">
+              
+              <div v-if="!UPLOAD_FILES_ENABLED" class="temp-disabled-message">
+                Загрузка файлов временно недоступна. Приносим извинения за неудобства.
+              </div>
+              
+              <div v-else-if="files.length" class="file-list">
                 <div v-for="(file, index) in files" :key="index" class="file-item">
                   <span class="file-name">{{ file.name }}</span>
                   <span class="file-size">({{ formatFileSize(file.size) }})</span>

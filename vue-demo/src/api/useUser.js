@@ -1,7 +1,6 @@
 import { computed, watchEffect } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { defineStore } from 'pinia'
-
 import { getCurrentUser } from '@/api/client'
 import { useAuth } from './useAuth'
 
@@ -33,8 +32,8 @@ export const useUser = defineStore('user', () => {
 
   return {
     user,
-
     isPending,
+    isError,
     isLoggedIn,
   }
 })

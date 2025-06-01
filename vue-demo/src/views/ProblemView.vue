@@ -1,23 +1,30 @@
 <script setup>
+import { computed } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useRoute } from 'vue-router'
 
 import { getProblemById } from '@/api/client'
 import { useAuth } from '@/api/useAuth'
+import { useUser } from '@/api/useUser'
 
 import AppHeader from '@/components/AppHeader.vue'
 
 const { params } = useRoute()
 const auth = useAuth()
+const userStore = useUser()
 
 const { data: problem, error, isPending, isError } = useQuery({
   queryKey: ['problem', params.id, auth.token],
   queryFn: () => getProblemById(params.id, auth.token),
-
   retry: false,
   refetchOnWindowFocus: false,
   refetchIntervalInBackground: false,
   refetchInterval: false,
+})
+
+const isGovOrMod = computed(() => {
+  if (!userStore.user) return false
+  return ['gov', 'mod', 'admin'].includes(userStore.user.role)
 })
 </script>
 
@@ -67,7 +74,7 @@ const { data: problem, error, isPending, isError } = useQuery({
         </div>
       </section>
 
-      <section class="second">
+      <section class="second" v-if="isGovOrMod">
         <div class="comments-section">
           <div class="mynic-comments">
             <h1 class="main-text-mynic" style="margin-top: 180px;">
@@ -98,11 +105,35 @@ const { data: problem, error, isPending, isError } = useQuery({
                 <p class="comment-text">{{ comment.text }}</p>
               </div>
             </div>
+
+            <div class="comment-form" style="margin-top: 30px; display: flex; gap: 15px;">
+              <div class="comment-avatar-container">
+                <img 
+                  src="../images/user-png.png" 
+                  alt="Аватар" 
+                  class="comment-avatar"
+                  style="width: 40px; height: 40px; border-radius: 50%;"
+                >
+              </div>
+              <div class="comment-input-wrapper" style="flex: 1;">
+                <div class="comment-input-container">
+                  <textarea 
+                    placeholder="Добавьте комментарий..." 
+                    class="mynic-comment-input"
+                    style="width: 100%; padding: 10px; border: 1px solid black; border-radius: 4px; min-height: 80px;"
+                  ></textarea>
+                </div>
+                <div class="comment-buttons" style="display: flex; justify-content: flex-end; margin-top: 10px; gap: 10px; margin-bottom: 15px;">
+                  <button class="comment-submit-btn" style="background: #3786BE; color: white; border: none; padding: 8px 16px; border-radius: 10px; cursor: pointer;">
+                    <a class="comment-submit-link" style="color: white; text-decoration: none; font-size: 22px;">Комментировать</a>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
     </div>
   </main>
 
-  <AppFooter />
 </template>
