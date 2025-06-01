@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { FastifySchema } from 'fastify';
 import { Static, Type } from '@sinclair/typebox';
 
@@ -67,3 +68,23 @@ export const loginSchema = {
 export type LoginErrors = Static<typeof loginErrors>;
 export type LoginBody = Static<typeof loginBody>;
 export type LoginSchema = typeof loginSchema;
+
+// verify email
+const verifyEmailErrors = Type.Union([
+  Type.Literal('token_expired'),
+  Type.Literal('invalid_token'),
+]);
+
+const verifyEmailBody = Type.Object({
+  token: Type.String(),
+});
+
+export const verifyEmailSchema = {
+  body: verifyEmailBody,
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type VerifyEmailErrors = Static<typeof verifyEmailErrors>;
+export type VerifyEmailSchema = typeof verifyEmailSchema;
