@@ -132,10 +132,10 @@ async function createProblem (
   request: FastifyRequestTypeBox<schema.CreateProblemSchema>,
   reply: FastifyReplyTypeBox<schema.CreateProblemSchema>
 ) {
-  const { title, description, uri, images } = request.body;
+  const { title, description, address, images } = request.body;
 
   const result = await this.problemService.createProblem(
-    { title, description, uri, images },
+    { title, description, uri: address, images },
     request.user.userId
   );
 

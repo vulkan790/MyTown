@@ -132,7 +132,7 @@ const createProblemBody = Type.Object({
     minLength: 1,
     maxLength: 4000,
   }),
-  uri: Type.String({
+  address: Type.String({
     minLength: 1,
   }),
   images: Type.Array(Type.Integer()),
