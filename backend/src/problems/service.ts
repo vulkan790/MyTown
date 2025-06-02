@@ -59,6 +59,7 @@ type Comment = {
 type RichProblem = Problem & {
   comments: Comment[];
   createdAt: string;
+  vote: number;
 };
 
 type AddressSuggestion = {
@@ -352,6 +353,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
           avatarUrl: users.avatarUrl,
         },
         createdAt: problems.createdAt,
+        vote: problemVotes.vote,
       })
       .from(problems)
 
@@ -359,6 +361,10 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       .leftJoin(imagesCTE, eq(problems.id, imagesCTE.problemId))
       .leftJoin(commentariesCTE, eq(problems.id, commentariesCTE.problemId))
       .leftJoin(users, eq(problems.userId, users.id))
+      .leftJoin(problemVotes, and(
+        eq(problems.id, problemVotes.problemId),
+        eq(problemVotes.voterId, user?.userId ?? -1)
+      ))
 
       .where(eq(problems.id, id))
       .limit(1);
@@ -431,6 +437,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
           },
 
       comments: problemCommentsList,
+      vote: problem.vote ?? 0,
     });
   };
 

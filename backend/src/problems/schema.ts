@@ -33,6 +33,7 @@ const Problem = Type.Object({
 
 const RichProblem = Type.Composite([Problem, Type.Object({
   comments: Type.Array(Comment),
+  vote: Type.Integer(),
 })]);
 
 const Address = Type.Object({
