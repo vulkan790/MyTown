@@ -193,3 +193,23 @@ export const addCommentSchema = {
 } satisfies FastifySchema;
 
 export type AddCommentSchema = typeof addCommentSchema;
+
+// vote
+const voteParams = Type.Object({
+  id: Type.Integer(),
+});
+
+const voteBody = Type.Object({
+  vote: Type.Integer({ minimum: -1, maximum: 1 }),
+});
+
+export const voteSchema = {
+  params: voteParams,
+  body: voteBody,
+
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type VoteSchema = typeof voteSchema;

@@ -89,6 +89,8 @@ type ModerationErrors = 'unknown_problem' | 'unknown_error' | 'forbidden' | 'alr
 
 type AddCommentErrors = 'forbidden' | 'unknown_problem' | 'problem_is_closed' | 'unknown_error';
 
+type VoteErrors = 'problem_is_closed' | 'unknown_problem' | 'unknown_error';
+
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
 
@@ -648,6 +650,84 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     return await transaction;
   };
 
+  const vote = async ({
+    problemId,
+    userId,
+    voteValue,
+  }: {
+    problemId: number;
+    userId: number;
+    voteValue: number
+  }): Promise<Result<void, VoteErrors>> => {
+    const problemSelect = drizzle.select({
+      id: problems.id,
+      status: problems.status,
+      vote: problemVotes.vote,
+    })
+      .from(problems)
+      .leftJoin(problemVotes, and(
+        eq(problems.id, problemVotes.problemId),
+        eq(problemVotes.voterId, userId)
+      ))
+      .where(eq(problems.id, problemId));
+
+    const problemResult = await fromPromise(
+      problemSelect.then((r) => r.at(0)),
+      (e) => e
+    );
+
+    if (problemResult.isErr()) {
+      console.error('Error during getting problem for vote', problemResult.error);
+      return err('unknown_error');
+    }
+
+    const problem = problemResult.value;
+    if (!problem) {
+      return err('unknown_problem');
+    }
+
+    if (problem.status === PROBLEM_STATUS.ON_MODERATION || problem.status === PROBLEM_STATUS.REJECTED) {
+      return err('unknown_problem');
+    }
+
+    if (problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE && problem.status !== PROBLEM_STATUS.SOLVING) {
+      return err('problem_is_closed');
+    }
+
+    if (problem.vote !== null) {
+      const updateVoteResult = await fromPromise(
+        drizzle.update(problemVotes)
+          .set({ vote: voteValue })
+          .where(and(
+            eq(problemVotes.problemId, problemId),
+            eq(problemVotes.voterId, userId)
+          )),
+        (e) => e
+      );
+
+      if (updateVoteResult.isErr()) {
+        console.error('Error during updating vote', updateVoteResult.error);
+        return err('unknown_error');
+      }
+    } else {
+      const insertVoteResult = await fromPromise(
+        drizzle.insert(problemVotes).values({
+          problemId,
+          voterId: userId,
+          vote: voteValue,
+        }),
+        (e) => e
+      );
+
+      if (insertVoteResult.isErr()) {
+        console.error('Error during inserting vote', insertVoteResult.error);
+        return err('unknown_error');
+      }
+    }
+
+    return ok();
+  };
+
   fastify.decorate('problemService', {
     getProblems,
     getHotProblems,
@@ -657,6 +737,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     createProblem,
     moderateProblem,
     addComment,
+    vote,
   });
 };
 
@@ -671,6 +752,7 @@ declare module 'fastify' {
       createProblem: (payload: CreateProblemPayload, userId: number) => Promise<CreateProblemResult>;
       moderateProblem: (id: number, status: 'approve' | 'reject', user: JwtPayload) => Promise<Result<void, ModerationErrors>>;
       addComment: (commentPayload: { problemId: number; content: string }, user: JwtPayload) => Promise<Result<Comment, AddCommentErrors>>;
+      vote: (votePayload: { problemId: number; userId: number; voteValue: number }) => Promise<Result<void, VoteErrors>>;
     };
   }
 }
