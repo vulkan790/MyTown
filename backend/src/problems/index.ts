@@ -21,6 +21,7 @@ export async function ProblemsController (fastify: FastifyTypebox) {
     authFastify.post('/images', { schema: schema.uploadProblemImageSchema }, uploadProblemImage);
 
     authFastify.post('/:id/moderation', { schema: schema.moderateProblemSchema }, moderateProblem);
+    authFastify.post('/:id/comments', { schema: schema.addCommentSchema }, addComment);
   });
 
   fastify.get('/:id', {
@@ -164,6 +165,45 @@ async function moderateProblem (
   const result = await this.problemService.moderateProblem(id, decision, request.user);
   if (result.isOk()) {
     await reply.status(204).send();
+    return;
+  }
+
+  if (result.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  if (result.error === 'unknown_problem') {
+    await reply.status(404).send();
+    return;
+  }
+
+  if (result.error === 'forbidden') {
+    await reply.status(403).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: result.error,
+  };
+}
+
+async function addComment (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.AddCommentSchema>,
+  reply: FastifyReplyTypeBox<schema.AddCommentSchema>
+) {
+  const { id } = request.params;
+  const { content } = request.body;
+
+  const result = await this.problemService.addComment(
+    { content, problemId: id },
+    request.user
+  );
+
+  if (result.isOk()) {
+    await reply.status(201).send(result.value);
     return;
   }
 

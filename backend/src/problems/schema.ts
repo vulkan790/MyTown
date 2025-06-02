@@ -170,3 +170,26 @@ export const moderateProblemSchema = {
 } satisfies FastifySchema;
 
 export type ModerateProblemSchema = typeof moderateProblemSchema;
+
+// add comment schema
+const addCommentParams = Type.Object({
+  id: Type.Integer(),
+});
+
+const addSchemaBody = Type.Object({
+  content: Type.String({
+    minLength: 1,
+    maxLength: 2000,
+  }),
+});
+
+export const addCommentSchema = {
+  params: addCommentParams,
+  body: addSchemaBody,
+
+  response: {
+    201: Comment,
+  },
+} satisfies FastifySchema;
+
+export type AddCommentSchema = typeof addCommentSchema;
