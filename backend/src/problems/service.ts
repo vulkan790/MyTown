@@ -43,18 +43,21 @@ type Problem = {
   createdAt: string;
 };
 
+type Comment = {
+  id: number;
+  content: string;
+  createdAt: string;
+
+  author: {
+    firstName: string;
+    lastName: string;
+    middleName: string;
+    avatarUrl: string;
+  };
+};
+
 type RichProblem = Problem & {
-  comments: {
-    id: number;
-    content: string;
-    createdAt: string;
-    author: {
-      firstName: string;
-      lastName: string;
-      middleName: string;
-      avatarUrl: string;
-    };
-  }[];
+  comments: Comment[];
   createdAt: string;
 };
 
@@ -83,6 +86,8 @@ type CreateProblemError = 'unknown_error';
 type CreateProblemResult = Result<{ id: number }, CreateProblemError>;
 
 type ModerationErrors = 'unknown_problem' | 'unknown_error' | 'forbidden' | 'already_moderated';
+
+type AddCommentErrors = 'forbidden' | 'unknown_problem' | 'problem_is_closed' | 'unknown_error';
 
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
@@ -572,6 +577,67 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     return ok();
   };
 
+  const addComment = async (
+    { problemId, content }: { problemId: number; content: string },
+    user: JwtPayload
+  ): Promise<Result<Comment, AddCommentErrors>> => {
+    if (user.role !== 'gov' && user.role !== 'mod') {
+      return err('forbidden');
+    }
+
+    const transaction = drizzle.transaction(async (tx): Promise<Result<Comment, AddCommentErrors>> => {
+      const problemList = await tx
+        .select({ id: problems.id, status: problems.status })
+        .from(problemComments)
+        .where(eq(problemComments.problemId, problemId));
+
+      const problem = problemList.at(0);
+      if (!problem) {
+        return err('unknown_problem');
+      }
+
+      if (problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE && problem.status !== PROBLEM_STATUS.SOLVING) {
+        return err('problem_is_closed');
+      }
+
+      const createdComment = await tx.insert(problemComments).values({
+        problemId,
+        content,
+        staffId: user.userId,
+      }).returning().then((r) => r[0]);
+
+      const author = await tx
+        .select({
+          firstName: users.firstName,
+          lastName: users.lastName,
+          middleName: users.middleName,
+          avatarUrl: users.avatarUrl,
+        })
+        .from(users)
+        .where(eq(users.id, user.userId))
+        .then((r) => r[0]);
+
+      const comment = {
+        ...createdComment,
+        createdAt: createdComment.createdAt.toISOString(),
+
+        author: {
+          firstName: author.firstName,
+          lastName: author.lastName,
+          middleName: author.middleName,
+          avatarUrl: author.avatarUrl ?? '',
+        },
+      };
+
+      return ok(comment);
+    }).catch((e) => {
+      console.error('Error during add comment transaction', e);
+      return err('unknown_error');
+    });
+
+    return await transaction;
+  };
+
   fastify.decorate('problemService', {
     getProblems,
     getHotProblems,
@@ -580,6 +646,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     uploadProblemImage,
     createProblem,
     moderateProblem,
+    addComment,
   });
 };
 
@@ -593,6 +660,7 @@ declare module 'fastify' {
       uploadProblemImage: (file?: MultipartFile['file'], mime?: string) => Promise<Result<UploadedeProblemImage, UploadProblemImageError>>;
       createProblem: (payload: CreateProblemPayload, userId: number) => Promise<CreateProblemResult>;
       moderateProblem: (id: number, status: 'approve' | 'reject', user: JwtPayload) => Promise<Result<void, ModerationErrors>>;
+      addComment: (commentPayload: { problemId: number; content: string }, user: JwtPayload) => Promise<Result<Comment, AddCommentErrors>>;
     };
   }
 }
