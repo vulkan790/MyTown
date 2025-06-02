@@ -309,7 +309,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
             'firstName', ${users.firstName},
             'lastName', ${users.lastName},
             'middleName', ${users.middleName},
-            'avatarUrl', ${users.avatarUrl}
+            'avatarUrl', ${users.avatarUrl},
+            'role', ${users.role}
           )
         ))`.as('comments'),
       })
@@ -327,6 +328,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
         lastName: string;
         middleName: string;
         avatarUrl: string | null;
+        role: 'gov' | 'mod' | 'admin' | 'user';
       } | null;
     };
 
@@ -384,10 +386,35 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       }
     }
 
+    const problemCommentsList = problem.comments.map((comment) => {
+      const author = comment.author !== null
+        ? {
+            ...comment.author,
+            avatarUrl: comment.author.avatarUrl ?? '',
+          }
+        : {
+            firstName: 'Удалённый Пользователь',
+            lastName: '',
+            middleName: '',
+            avatarUrl: '',
+            role: 'user',
+          };
+
+      if (author.role !== 'gov') {
+        author.lastName = '';
+        author.middleName = '';
+      }
+
+      return {
+        ...comment,
+        author,
+      };
+    });
+
     return ok({
       ...problem,
 
-      createdAt: problem.createdAt!.toISOString(),
+      createdAt: problem.createdAt.toISOString(),
       author: problem.author
         ? {
             ...problem.author,
@@ -401,24 +428,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
             avatarUrl: '',
           },
 
-      comments: problem.comments.map((comment) => ({
-        ...comment,
-
-        createdAt: comment.createdAt,
-        author: comment.author
-          ? {
-              ...comment.author,
-              avatarUrl: comment.author.avatarUrl
-                ? comment.author.avatarUrl
-                : '',
-            }
-          : {
-              firstName: 'Удалённый Пользователь',
-              lastName: '',
-              middleName: '',
-              avatarUrl: '',
-            },
-      })),
+      comments: problemCommentsList,
     });
   };
 
