@@ -33,6 +33,7 @@ const Problem = Type.Object({
 
 const RichProblem = Type.Composite([Problem, Type.Object({
   comments: Type.Array(Comment),
+  vote: Type.Integer(),
 })]);
 
 const Address = Type.Object({
@@ -45,6 +46,7 @@ const Address = Type.Object({
 const getAllProblemsQuery = Type.Object({
   page: Type.Integer({ minimum: 1, default: 1 }),
   limit: Type.Integer({ minimum: 1, maximum: 25, default: 10 }),
+  type: Type.Optional(Type.String()),
 });
 
 const getAllProblemsResponse = Type.Object({
@@ -130,7 +132,7 @@ const createProblemBody = Type.Object({
     minLength: 1,
     maxLength: 4000,
   }),
-  uri: Type.String({
+  address: Type.String({
     minLength: 1,
   }),
   images: Type.Array(Type.Integer()),
@@ -170,3 +172,46 @@ export const moderateProblemSchema = {
 } satisfies FastifySchema;
 
 export type ModerateProblemSchema = typeof moderateProblemSchema;
+
+// add comment schema
+const addCommentParams = Type.Object({
+  id: Type.Integer(),
+});
+
+const addSchemaBody = Type.Object({
+  content: Type.String({
+    minLength: 1,
+    maxLength: 2000,
+  }),
+});
+
+export const addCommentSchema = {
+  params: addCommentParams,
+  body: addSchemaBody,
+
+  response: {
+    201: Comment,
+  },
+} satisfies FastifySchema;
+
+export type AddCommentSchema = typeof addCommentSchema;
+
+// vote
+const voteParams = Type.Object({
+  id: Type.Integer(),
+});
+
+const voteBody = Type.Object({
+  vote: Type.Integer({ minimum: -1, maximum: 1 }),
+});
+
+export const voteSchema = {
+  params: voteParams,
+  body: voteBody,
+
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type VoteSchema = typeof voteSchema;

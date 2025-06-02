@@ -21,6 +21,8 @@ export async function ProblemsController (fastify: FastifyTypebox) {
     authFastify.post('/images', { schema: schema.uploadProblemImageSchema }, uploadProblemImage);
 
     authFastify.post('/:id/moderation', { schema: schema.moderateProblemSchema }, moderateProblem);
+    authFastify.post('/:id/comments', { schema: schema.addCommentSchema }, addComment);
+    authFastify.post('/:id/vote', { schema: schema.voteSchema }, vote);
   });
 
   fastify.get('/:id', {
@@ -34,9 +36,9 @@ async function getProblems (
   request: FastifyRequestTypeBox<schema.GetAllProblemsSchema>,
   reply: FastifyReplyTypeBox<schema.GetAllProblemsSchema>
 ) {
-  const { page, limit } = request.query;
+  const { page, limit, type } = request.query;
 
-  const result = await this.problemService.getProblems(page, limit);
+  const result = await this.problemService.getProblems(page, limit, type);
   if (result.isOk()) {
     await reply.status(200).send({
       page: result.value.page,
@@ -130,10 +132,10 @@ async function createProblem (
   request: FastifyRequestTypeBox<schema.CreateProblemSchema>,
   reply: FastifyReplyTypeBox<schema.CreateProblemSchema>
 ) {
-  const { title, description, uri, images } = request.body;
+  const { title, description, address, images } = request.body;
 
   const result = await this.problemService.createProblem(
-    { title, description, uri, images },
+    { title, description, uri: address, images },
     request.user.userId
   );
 
@@ -179,6 +181,80 @@ async function moderateProblem (
 
   if (result.error === 'forbidden') {
     await reply.status(403).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: result.error,
+  };
+}
+
+async function addComment (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.AddCommentSchema>,
+  reply: FastifyReplyTypeBox<schema.AddCommentSchema>
+) {
+  const { id } = request.params;
+  const { content } = request.body;
+
+  const result = await this.problemService.addComment(
+    { content, problemId: id },
+    request.user
+  );
+
+  if (result.isOk()) {
+    await reply.status(201).send(result.value);
+    return;
+  }
+
+  if (result.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  if (result.error === 'unknown_problem') {
+    await reply.status(404).send();
+    return;
+  }
+
+  if (result.error === 'forbidden') {
+    await reply.status(403).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: result.error,
+  };
+}
+
+async function vote (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.VoteSchema>,
+  reply: FastifyReplyTypeBox<schema.VoteSchema>
+) {
+  const { id } = request.params;
+  const { vote } = request.body;
+
+  const result = await this.problemService.vote({
+    problemId: id,
+    voteValue: vote,
+    userId: request.user.userId,
+  });
+
+  if (result.isOk()) {
+    await reply.status(204).send();
+    return;
+  }
+
+  if (result.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  if (result.error === 'unknown_problem') {
+    await reply.status(404).send();
     return;
   }
 

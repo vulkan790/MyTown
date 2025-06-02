@@ -3,7 +3,7 @@ import type { MultipartFile } from '@fastify/multipart';
 
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
-import { and, desc, eq, or, sql, sum, isNull, inArray } from 'drizzle-orm';
+import { and, desc, eq, or, sql, sum, isNull, inArray, asc } from 'drizzle-orm';
 import { problems, problemVotes, problemImages, problemComments, users } from '../db/schema.js';
 
 import { createWriteStream } from 'node:fs';
@@ -43,19 +43,23 @@ type Problem = {
   createdAt: string;
 };
 
-type RichProblem = Problem & {
-  comments: {
-    id: number;
-    content: string;
-    createdAt: string;
-    author: {
-      firstName: string;
-      lastName: string;
-      middleName: string;
-      avatarUrl: string;
-    };
-  }[];
+type Comment = {
+  id: number;
+  content: string;
   createdAt: string;
+
+  author: {
+    firstName: string;
+    lastName: string;
+    middleName: string;
+    avatarUrl: string;
+  };
+};
+
+type RichProblem = Problem & {
+  comments: Comment[];
+  createdAt: string;
+  vote: number;
 };
 
 type AddressSuggestion = {
@@ -84,12 +88,17 @@ type CreateProblemResult = Result<{ id: number }, CreateProblemError>;
 
 type ModerationErrors = 'unknown_problem' | 'unknown_error' | 'forbidden' | 'already_moderated';
 
+type AddCommentErrors = 'forbidden' | 'unknown_problem' | 'problem_is_closed' | 'unknown_error';
+
+type VoteErrors = 'problem_is_closed' | 'unknown_problem' | 'unknown_error';
+
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
 
   const getProblems = async (
     page: number,
-    limit: number
+    limit: number,
+    type?: 'moderation' | 'pending' | 'solving' | (string & {})
   ): Promise<Result<Paginated<Problem>, 'unknown_error'>> => {
     const votesCTE = drizzle.$with('aggregated_votes').as(
       drizzle
@@ -144,7 +153,31 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       ))
       .orderBy(desc(problems.createdAt))
       .limit(limit)
-      .offset((page - 1) * limit);
+      .offset((page - 1) * limit)
+
+      .$dynamic();
+
+    // TODO: check for user roles
+    switch (type) {
+      case 'moderation':
+        problemsSelect.where(eq(problems.status, PROBLEM_STATUS.ON_MODERATION));
+        problemsSelect.orderBy(asc(problems.createdAt));
+        break;
+
+      case 'pending':
+        problemsSelect.where(eq(problems.status, PROBLEM_STATUS.WAIT_FOR_SOLVE));
+        problemsSelect.orderBy(asc(problems.createdAt));
+        break;
+
+      case 'solving':
+        problemsSelect.where(eq(problems.status, PROBLEM_STATUS.SOLVING));
+        problemsSelect.orderBy(asc(problems.createdAt));
+        break;
+
+      default:
+        // No additional filtering
+        break;
+    }
 
     const problemsResult = await fromPromise(
       problemsSelect,
@@ -304,7 +337,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
             'firstName', ${users.firstName},
             'lastName', ${users.lastName},
             'middleName', ${users.middleName},
-            'avatarUrl', ${users.avatarUrl}
+            'avatarUrl', ${users.avatarUrl},
+            'role', ${users.role}
           )
         ))`.as('comments'),
       })
@@ -322,6 +356,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
         lastName: string;
         middleName: string;
         avatarUrl: string | null;
+        role: 'gov' | 'mod' | 'admin' | 'user';
       } | null;
     };
 
@@ -343,6 +378,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
           avatarUrl: users.avatarUrl,
         },
         createdAt: problems.createdAt,
+        vote: problemVotes.vote,
       })
       .from(problems)
 
@@ -350,6 +386,10 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       .leftJoin(imagesCTE, eq(problems.id, imagesCTE.problemId))
       .leftJoin(commentariesCTE, eq(problems.id, commentariesCTE.problemId))
       .leftJoin(users, eq(problems.userId, users.id))
+      .leftJoin(problemVotes, and(
+        eq(problems.id, problemVotes.problemId),
+        eq(problemVotes.voterId, user?.userId ?? -1)
+      ))
 
       .where(eq(problems.id, id))
       .limit(1);
@@ -379,10 +419,35 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       }
     }
 
+    const problemCommentsList = problem.comments.map((comment) => {
+      const author = comment.author !== null
+        ? {
+            ...comment.author,
+            avatarUrl: comment.author.avatarUrl ?? '',
+          }
+        : {
+            firstName: 'Удалённый Пользователь',
+            lastName: '',
+            middleName: '',
+            avatarUrl: '',
+            role: 'user',
+          };
+
+      if (author.role !== 'gov') {
+        author.lastName = '';
+        author.middleName = '';
+      }
+
+      return {
+        ...comment,
+        author,
+      };
+    });
+
     return ok({
       ...problem,
 
-      createdAt: problem.createdAt!.toISOString(),
+      createdAt: problem.createdAt.toISOString(),
       author: problem.author
         ? {
             ...problem.author,
@@ -396,24 +461,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
             avatarUrl: '',
           },
 
-      comments: problem.comments.map((comment) => ({
-        ...comment,
-
-        createdAt: comment.createdAt,
-        author: comment.author
-          ? {
-              ...comment.author,
-              avatarUrl: comment.author.avatarUrl
-                ? comment.author.avatarUrl
-                : '',
-            }
-          : {
-              firstName: 'Удалённый Пользователь',
-              lastName: '',
-              middleName: '',
-              avatarUrl: '',
-            },
-      })),
+      comments: problemCommentsList,
+      vote: problem.vote ?? 0,
     });
   };
 
@@ -572,6 +621,145 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     return ok();
   };
 
+  const addComment = async (
+    { problemId, content }: { problemId: number; content: string },
+    user: JwtPayload
+  ): Promise<Result<Comment, AddCommentErrors>> => {
+    if (user.role !== 'gov' && user.role !== 'mod') {
+      return err('forbidden');
+    }
+
+    const transaction = drizzle.transaction(async (tx): Promise<Result<Comment, AddCommentErrors>> => {
+      const problemList = await tx
+        .select({ id: problems.id, status: problems.status })
+        .from(problemComments)
+        .where(eq(problemComments.problemId, problemId));
+
+      const problem = problemList.at(0);
+      if (!problem) {
+        return err('unknown_problem');
+      }
+
+      if (problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE && problem.status !== PROBLEM_STATUS.SOLVING) {
+        return err('problem_is_closed');
+      }
+
+      const createdComment = await tx.insert(problemComments).values({
+        problemId,
+        content,
+        staffId: user.userId,
+      }).returning().then((r) => r[0]);
+
+      const author = await tx
+        .select({
+          firstName: users.firstName,
+          lastName: users.lastName,
+          middleName: users.middleName,
+          avatarUrl: users.avatarUrl,
+        })
+        .from(users)
+        .where(eq(users.id, user.userId))
+        .then((r) => r[0]);
+
+      const comment = {
+        ...createdComment,
+        createdAt: createdComment.createdAt.toISOString(),
+
+        author: {
+          firstName: author.firstName,
+          lastName: author.lastName,
+          middleName: author.middleName,
+          avatarUrl: author.avatarUrl ?? '',
+        },
+      };
+
+      return ok(comment);
+    }).catch((e) => {
+      console.error('Error during add comment transaction', e);
+      return err('unknown_error');
+    });
+
+    return await transaction;
+  };
+
+  const vote = async ({
+    problemId,
+    userId,
+    voteValue,
+  }: {
+    problemId: number;
+    userId: number;
+    voteValue: number
+  }): Promise<Result<void, VoteErrors>> => {
+    const problemSelect = drizzle.select({
+      id: problems.id,
+      status: problems.status,
+      vote: problemVotes.vote,
+    })
+      .from(problems)
+      .leftJoin(problemVotes, and(
+        eq(problems.id, problemVotes.problemId),
+        eq(problemVotes.voterId, userId)
+      ))
+      .where(eq(problems.id, problemId));
+
+    const problemResult = await fromPromise(
+      problemSelect.then((r) => r.at(0)),
+      (e) => e
+    );
+
+    if (problemResult.isErr()) {
+      console.error('Error during getting problem for vote', problemResult.error);
+      return err('unknown_error');
+    }
+
+    const problem = problemResult.value;
+    if (!problem) {
+      return err('unknown_problem');
+    }
+
+    if (problem.status === PROBLEM_STATUS.ON_MODERATION || problem.status === PROBLEM_STATUS.REJECTED) {
+      return err('unknown_problem');
+    }
+
+    if (problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE && problem.status !== PROBLEM_STATUS.SOLVING) {
+      return err('problem_is_closed');
+    }
+
+    if (problem.vote !== null) {
+      const updateVoteResult = await fromPromise(
+        drizzle.update(problemVotes)
+          .set({ vote: voteValue })
+          .where(and(
+            eq(problemVotes.problemId, problemId),
+            eq(problemVotes.voterId, userId)
+          )),
+        (e) => e
+      );
+
+      if (updateVoteResult.isErr()) {
+        console.error('Error during updating vote', updateVoteResult.error);
+        return err('unknown_error');
+      }
+    } else {
+      const insertVoteResult = await fromPromise(
+        drizzle.insert(problemVotes).values({
+          problemId,
+          voterId: userId,
+          vote: voteValue,
+        }),
+        (e) => e
+      );
+
+      if (insertVoteResult.isErr()) {
+        console.error('Error during inserting vote', insertVoteResult.error);
+        return err('unknown_error');
+      }
+    }
+
+    return ok();
+  };
+
   fastify.decorate('problemService', {
     getProblems,
     getHotProblems,
@@ -580,19 +768,23 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     uploadProblemImage,
     createProblem,
     moderateProblem,
+    addComment,
+    vote,
   });
 };
 
 declare module 'fastify' {
   interface FastifyInstance {
     problemService: {
-      getProblems: (page: number, limit: number) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
+      getProblems: (page: number, limit: number, type?: 'moderation' | 'pending' | 'solving' | (string & {})) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
       getHotProblems: (limit?: number) => Promise<Result<Problem[], 'unknown_error'>>;
       getProblem: (id: number, user: JwtPayload | null) => Promise<Result<RichProblem, 'unknown_problem' | 'unknown_error'>>;
       getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>;
       uploadProblemImage: (file?: MultipartFile['file'], mime?: string) => Promise<Result<UploadedeProblemImage, UploadProblemImageError>>;
       createProblem: (payload: CreateProblemPayload, userId: number) => Promise<CreateProblemResult>;
       moderateProblem: (id: number, status: 'approve' | 'reject', user: JwtPayload) => Promise<Result<void, ModerationErrors>>;
+      addComment: (commentPayload: { problemId: number; content: string }, user: JwtPayload) => Promise<Result<Comment, AddCommentErrors>>;
+      vote: (votePayload: { problemId: number; userId: number; voteValue: number }) => Promise<Result<void, VoteErrors>>;
     };
   }
 }
