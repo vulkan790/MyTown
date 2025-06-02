@@ -3,7 +3,7 @@ import type { MultipartFile } from '@fastify/multipart';
 
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
-import { and, desc, eq, or, sql, sum, isNull, inArray } from 'drizzle-orm';
+import { and, desc, eq, or, sql, sum, isNull, inArray, asc } from 'drizzle-orm';
 import { problems, problemVotes, problemImages, problemComments, users } from '../db/schema.js';
 
 import { createWriteStream } from 'node:fs';
@@ -97,7 +97,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
 
   const getProblems = async (
     page: number,
-    limit: number
+    limit: number,
+    type?: 'moderation' | 'pending' | 'solving' | (string & {})
   ): Promise<Result<Paginated<Problem>, 'unknown_error'>> => {
     const votesCTE = drizzle.$with('aggregated_votes').as(
       drizzle
@@ -152,7 +153,31 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       ))
       .orderBy(desc(problems.createdAt))
       .limit(limit)
-      .offset((page - 1) * limit);
+      .offset((page - 1) * limit)
+
+      .$dynamic();
+
+    // TODO: check for user roles
+    switch (type) {
+      case 'moderation':
+        problemsSelect.where(eq(problems.status, PROBLEM_STATUS.ON_MODERATION));
+        problemsSelect.orderBy(asc(problems.createdAt));
+        break;
+
+      case 'pending':
+        problemsSelect.where(eq(problems.status, PROBLEM_STATUS.WAIT_FOR_SOLVE));
+        problemsSelect.orderBy(asc(problems.createdAt));
+        break;
+
+      case 'solving':
+        problemsSelect.where(eq(problems.status, PROBLEM_STATUS.SOLVING));
+        problemsSelect.orderBy(asc(problems.createdAt));
+        break;
+
+      default:
+        // No additional filtering
+        break;
+    }
 
     const problemsResult = await fromPromise(
       problemsSelect,
@@ -751,7 +776,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
 declare module 'fastify' {
   interface FastifyInstance {
     problemService: {
-      getProblems: (page: number, limit: number) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
+      getProblems: (page: number, limit: number, type?: 'moderation' | 'pending' | 'solving' | (string & {})) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
       getHotProblems: (limit?: number) => Promise<Result<Problem[], 'unknown_error'>>;
       getProblem: (id: number, user: JwtPayload | null) => Promise<Result<RichProblem, 'unknown_problem' | 'unknown_error'>>;
       getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>;

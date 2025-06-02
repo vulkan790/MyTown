@@ -46,6 +46,7 @@ const Address = Type.Object({
 const getAllProblemsQuery = Type.Object({
   page: Type.Integer({ minimum: 1, default: 1 }),
   limit: Type.Integer({ minimum: 1, maximum: 25, default: 10 }),
+  type: Type.Optional(Type.String()),
 });
 
 const getAllProblemsResponse = Type.Object({

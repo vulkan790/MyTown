@@ -36,9 +36,9 @@ async function getProblems (
   request: FastifyRequestTypeBox<schema.GetAllProblemsSchema>,
   reply: FastifyReplyTypeBox<schema.GetAllProblemsSchema>
 ) {
-  const { page, limit } = request.query;
+  const { page, limit, type } = request.query;
 
-  const result = await this.problemService.getProblems(page, limit);
+  const result = await this.problemService.getProblems(page, limit, type);
   if (result.isOk()) {
     await reply.status(200).send({
       page: result.value.page,
