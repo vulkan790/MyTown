@@ -554,3 +554,49 @@ query (всё, что идет после вопроса в конце URL), pat
 ```json
 // empty
 ```
+
+## POST /api/problems/:id/votes
+
+Проголосовать за/против проблемы.
+
+### Request
+
+**Headers**
+```json
+{
+  "auhtorization": "Bearer jwt-token"
+}
+```
+
+**Path**
+```json
+{
+  "id": 123
+}
+```
+
+**Body**
+```json
+{
+  "vote": 0 // -1 - против, 0 - нейтрально, 1 - за
+}
+```
+
+### Response
+
+**204 No Content**
+```json
+// success
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "" // problem_is_closed
+}
+```
+
+**404 Not Found**
+```json
+// проблема не найдена
+```
