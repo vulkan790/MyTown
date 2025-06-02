@@ -22,6 +22,7 @@ export async function ProblemsController (fastify: FastifyTypebox) {
 
     authFastify.post('/:id/moderation', { schema: schema.moderateProblemSchema }, moderateProblem);
     authFastify.post('/:id/comments', { schema: schema.addCommentSchema }, addComment);
+    authFastify.post('/:id/vote', { schema: schema.voteSchema }, vote);
   });
 
   fastify.get('/:id', {
@@ -219,6 +220,41 @@ async function addComment (
 
   if (result.error === 'forbidden') {
     await reply.status(403).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: result.error,
+  };
+}
+
+async function vote (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schema.VoteSchema>,
+  reply: FastifyReplyTypeBox<schema.VoteSchema>
+) {
+  const { id } = request.params;
+  const { vote } = request.body;
+
+  const result = await this.problemService.vote({
+    problemId: id,
+    voteValue: vote,
+    userId: request.user.userId,
+  });
+
+  if (result.isOk()) {
+    await reply.status(204).send();
+    return;
+  }
+
+  if (result.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  if (result.error === 'unknown_problem') {
+    await reply.status(404).send();
     return;
   }
 

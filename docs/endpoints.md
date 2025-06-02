@@ -82,6 +82,7 @@ query (всё, что идет после вопроса в конце URL), pat
   "images": ["https://host.com/uploads/image.jpg"],
   "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved"
   "votes": 123, // could be negative (?)
+  "vote": 0, // user's vote: -1, 0, 1
   "createdAt": "2025-05-06T17:39:43.838Z", // date ISO string
   "author": {
     "id": 12,
@@ -553,4 +554,50 @@ query (всё, что идет после вопроса в конце URL), pat
 **404 Not Found**
 ```json
 // empty
+```
+
+## POST /api/problems/:id/votes
+
+Проголосовать за/против проблемы.
+
+### Request
+
+**Headers**
+```json
+{
+  "auhtorization": "Bearer jwt-token"
+}
+```
+
+**Path**
+```json
+{
+  "id": 123
+}
+```
+
+**Body**
+```json
+{
+  "vote": 0 // -1 - против, 0 - нейтрально, 1 - за
+}
+```
+
+### Response
+
+**204 No Content**
+```json
+// success
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "" // problem_is_closed
+}
+```
+
+**404 Not Found**
+```json
+// проблема не найдена
 ```
