@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useForm } from '@tanstack/vue-form'
 import { useMutation } from '@tanstack/vue-query'
-import { register, confirmRegistration } from '@/api/client'
+import { register, verifyEmail, login } from '@/api/client'
 import { useAuth } from '@/api/useAuth'
 
 import AppHeaderWithGradientReg from '@/components/AppHeaderWithGradientReg.vue'
@@ -20,85 +20,126 @@ const isConfirmPasswordVisible = ref(false)
 const registrationStep = ref(1) 
 const confirmationCode = ref('')
 const registrationPayload = ref(null)
-const countdown = ref(0)
+const confirmationError = ref('')
 
-const togglePasswordVisibility = () => {
-  isPasswordVisible.value = !isPasswordVisible.value
-}
-
-const toggleConfirmPasswordVisibility = () => {
-  isConfirmPasswordVisible.value = !isConfirmPasswordVisible.value
-}
-
-const { isPending: isRegistering, mutateAsync: registerUser } = useMutation({
-  mutationFn: register,
-  onSuccess: () => {
-    registrationStep.value = 2
-    startCountdown()
-  },
-  throwOnError: false,
-})
-
-const { isPending: isConfirming, mutateAsync: confirmCode } = useMutation({
-  mutationFn: (payload) => confirmRegistration({
-    ...payload,
-    code: confirmationCode.value
-  }),
-  onSuccess: (data) => {
-    auth.setToken(data.accessToken)
-    router.push('/')
-  },
-  throwOnError: false,
-})
-
-const startCountdown = () => {
-  countdown.value = 60
-  const timer = setInterval(() => {
-    countdown.value--
-    if (countdown.value <= 0) {
-      clearInterval(timer)
-    }
-  }, 1000)
-}
-
-const resendCode = async () => {
-  if (countdown.value > 0) return
-  
-  try {
-    await registerUser(registrationPayload.value)
-    startCountdown()
-  } catch (error) {
-    console.error('Error resending code:', error)
-    alert('Не удалось отправить код повторно. Попробуйте позже.')
-  }
-}
+const errorMap = {
+  'must match format "email"': 'должен быть в формате email',
+  'is required': 'обязателен для заполнения',
+  'min length is 6': 'должен содержать минимум 6 символов',
+  'must NOT have fewer than 6 characters': 'должен содержать минимум 6 символов',
+  'must be one of': 'должен быть одним из допустимых значений',
+  'must be a string': 'должен быть текстом',
+  'must be a valid gender': 'должен быть указан пол',
+  'passwords do not match': 'пароли не совпадают',
+  'user already exists': 'пользователь уже существует',
+  'agreement must be accepted': 'необходимо принять пользовательское соглашение',
+  'body/email': 'Почта',
+  'body/password': 'Пароль',
+  'body/firstName': 'Имя',
+  'body/lastName': 'Фамилия',
+  'body/gender': 'Пол',
+  'body/agreement': 'Соглашение',
+  'token_expired': 'Срок действия кода истёк',
+  'invalid_token': 'Неверный код подтверждения',
+  'verification_failed': 'Ошибка подтверждения почты'
+};
 
 const translateError = (error) => {
-  const errorMap = {
-    'must match format "email"': 'должен быть в формате email',
-    'is required': 'обязателен для заполнения',
-    'min length is 6': 'должен содержать минимум 6 символов',
-    'must NOT have fewer than 6 characters': 'должен содержать минимум 6 символов',
-    'must be one of': 'должен быть одним из допустимых значений',
-    'must be a string': 'должен быть текстом',
-    'must be a valid gender': 'должен быть указан пол',
-    'passwords do not match': 'пароли не совпадают',
-    'user already exists': 'пользователь уже существует',
-    'agreement must be accepted': 'необходимо принять пользовательское соглашение',
-    'body/email': 'Почта',
-    'body/password': 'Пароль',
-    'body/firstName': 'Имя',
-    'body/lastName': 'Фамилия',
-    'body/gender': 'Пол',
-    'body/agreement': 'Соглашение',
-  };
-
   let translated = error;
   for (const [key, value] of Object.entries(errorMap)) {
     translated = translated.replace(key, value);
   }
   return translated;
 };
+
+const handleRegistrationError = async (error) => {
+  console.error('Registration error:', error);
+  
+  if (error.name === 'HTTPError') {
+    const errorData = await error.response.json();
+    
+    if (error.response.status === 400) {
+      let errorMsg = 'Ошибка в данных:\n';
+      
+      if (errorData.errors && Array.isArray(errorData.errors)) {
+        errorData.errors.forEach(err => {
+          errorMsg += `\n• ${translateError(err.message)}`;
+        });
+      } else {
+        errorMsg += `\n• ${translateError(errorData.message || 'Неизвестная ошибка валидации')}`;
+      }
+      
+      alert(errorMsg);
+    } 
+    else if (error.response.status === 409) {
+      alert('Пользователь с такой почтой уже существует');
+    } 
+    else {
+      const errorMsg = translateError(
+        errorData.message || 'Ошибка регистрации. Пожалуйста, проверьте данные'
+      );
+      alert(errorMsg);
+    }
+  } else {
+    alert('Произошла неизвестная ошибка. Попробуйте позже');
+  }
+};
+
+const handleVerificationError = (error) => {
+  console.error('Verification error:', error);
+  
+  if (error.name === 'HTTPError' && error.response.status === 400) {
+    const errorType = error.data?.error;
+    switch (errorType) {
+      case 'token_expired':
+        confirmationError.value = 'Срок действия кода истёк';
+        break;
+      case 'invalid_token':
+        confirmationError.value = 'Неверный код подтверждения';
+        break;
+      default:
+        confirmationError.value = 'Ошибка подтверждения почты';
+    }
+  } else {
+    confirmationError.value = 'Ошибка сервера. Попробуйте позже';
+  }
+};
+
+const togglePasswordVisibility = () => {
+  isPasswordVisible.value = !isPasswordVisible.value;
+};
+
+const toggleConfirmPasswordVisibility = () => {
+  isConfirmPasswordVisible.value = !isConfirmPasswordVisible.value;
+};
+
+const { isPending: isRegistering, mutateAsync: registerUser } = useMutation({
+  mutationFn: register,
+  onSuccess: () => {
+    registrationStep.value = 2;
+  },
+  onError: handleRegistrationError,
+  throwOnError: false,
+});
+
+const { isPending: isConfirming, mutateAsync: confirmEmail } = useMutation({
+  mutationFn: verifyEmail,
+  onSuccess: async () => {
+    try {
+      const loginData = await login(
+        registrationPayload.value.email,
+        registrationPayload.value.password
+      );
+      auth.setToken(loginData.accessToken);
+      router.push('/');
+    } catch (error) {
+      console.error('Login after confirmation failed:', error);
+      confirmationError.value = 'Ошибка входа после подтверждения';
+    }
+  },
+  onError: handleVerificationError,
+  throwOnError: false,
+});
 
 const form = useForm({
   validators: {
@@ -132,38 +173,9 @@ const form = useForm({
     }
 
     try {
-      await registerUser(registrationPayload.value)
+      await registerUser(registrationPayload.value);
     } catch (e) {
-      console.error('Registration error:', e)
       
-      if (e.name === 'HTTPError') {
-        const errorData = await e.response.json()
-        
-        if (e.response.status === 400) {
-          let errorMsg = 'Ошибка в данных:\n'
-          
-          if (errorData.errors && Array.isArray(errorData.errors)) {
-            errorData.errors.forEach(err => {
-              errorMsg += `\n• ${translateError(err.message)}`
-            })
-          } else {
-            errorMsg += `\n• ${translateError(errorData.message || 'Неизвестная ошибка валидации')}`
-          }
-          
-          alert(errorMsg)
-        } 
-        else if (e.response.status === 409) {
-          alert('Пользователь с такой почтой уже существует')
-        } 
-        else {
-          const errorMsg = translateError(
-            errorData.message || 'Ошибка регистрации. Пожалуйста, проверьте данные'
-          )
-          alert(errorMsg)
-        }
-      } else {
-        alert('Произошла неизвестная ошибка. Попробуйте позже')
-      }
     }
   },
   defaultValues: {
@@ -177,13 +189,23 @@ const form = useForm({
     gender: 'male'
   },
 })
+
+const handleConfirmation = () => {
+  confirmationError.value = '';
+  
+  if (!confirmationCode.value.match(/^\d{6}$/)) {
+    confirmationError.value = 'Код должен содержать 6 цифр';
+    return;
+  }
+  
+  confirmEmail(confirmationCode.value);
+}
 </script>
 
 <template>
   <AppHeaderWithGradientReg />
 
-  <main class="main"
-    style="background: linear-gradient(to right, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
+  <main class="main" style="background: linear-gradient(to right, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
     <div class="container">
       <section class="reg-container">
         <div class="process-reg">

@@ -151,19 +151,12 @@ export function register(userData) {
 }
 
 /**
- * Confirm email registration.
- * @param {Object} confirmData
- * @param {string} confirmData.email
- * @param {string} confirmData.code
- * @param {string} confirmData.password
- * @param {string} confirmData.firstName
- * @param {string} confirmData.lastName
- * @param {string} [confirmData.middleName]
- * @param {Gender} confirmData.gender
- * @returns {Promise<LoginResponse>}
+ * Verify email with a token.
+ * @param {string} token - The verification token (code)
+ * @returns {Promise<void>}
  */
-export function confirmRegistration(confirmData) {
-  return api.post('auth/confirm', { json: confirmData }).json()
+export function verifyEmail(token) {
+  return api.post('auth/verify', { json: { token } }).json();
 }
 
 /**

@@ -30,10 +30,15 @@ export const useUser = defineStore('user', () => {
     return true
   })
 
+  const isVerified = computed(() => {
+    return user.value?.emailVerified || false
+  })
+
   return {
     user,
     isPending,
     isError,
     isLoggedIn,
+    isVerified
   }
 })
