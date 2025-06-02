@@ -232,6 +232,7 @@ query (всё, что идет после вопроса в конце URL), pat
 {
   "error": "" // token_expired | invalid_token
 }
+```
 
 ## GET /api/users/me
 
