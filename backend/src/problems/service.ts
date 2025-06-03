@@ -82,6 +82,13 @@ type CreateProblemPayload = {
   images: number[];
 };
 
+type GetProblemsParams = {
+  page: number;
+  limit: number;
+  type?: 'moderation' | 'pending' | 'solving' | (string & {});
+  user: JwtPayload | null;
+};
+
 type CreateProblemError = 'unknown_error';
 
 type CreateProblemResult = Result<{ id: number }, CreateProblemError>;
@@ -97,11 +104,12 @@ type SolveProblemErrors = 'problem_is_closed' | 'forbidden' | 'unknown_problem' 
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
 
-  const getProblems = async (
-    page: number,
-    limit: number,
-    type?: 'moderation' | 'pending' | 'solving' | (string & {})
-  ): Promise<Result<Paginated<Problem>, 'unknown_error'>> => {
+  const getProblems = async ({
+    page,
+    limit,
+    type,
+    user = null,
+  }: GetProblemsParams): Promise<Result<Paginated<Problem>, 'unknown_error'>> => {
     const votesCTE = drizzle.$with('aggregated_votes').as(
       drizzle
         .select({
@@ -162,16 +170,22 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     // TODO: check for user roles
     switch (type) {
       case 'moderation':
+        if (!user || (user.role !== 'admin' && user.role !== 'mod')) break;
+
         problemsSelect.where(eq(problems.status, PROBLEM_STATUS.ON_MODERATION));
         problemsSelect.orderBy(asc(problems.createdAt));
         break;
 
       case 'pending':
+        if (!user || (user.role !== 'gov' && user.role !== 'admin')) break;
+
         problemsSelect.where(eq(problems.status, PROBLEM_STATUS.WAIT_FOR_SOLVE));
         problemsSelect.orderBy(asc(problems.createdAt));
         break;
 
       case 'solving':
+        if (!user || (user.role !== 'gov' && user.role !== 'admin')) break;
+
         problemsSelect.where(eq(problems.status, PROBLEM_STATUS.SOLVING));
         problemsSelect.orderBy(asc(problems.createdAt));
         break;
@@ -834,7 +848,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
 declare module 'fastify' {
   interface FastifyInstance {
     problemService: {
-      getProblems: (page: number, limit: number, type?: 'moderation' | 'pending' | 'solving' | (string & {})) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
+      getProblems: (payload: GetProblemsParams) => Promise<Result<Paginated<Problem>, 'unknown_error'>>;
       getHotProblems: (limit?: number) => Promise<Result<Problem[], 'unknown_error'>>;
       getProblem: (id: number, user: JwtPayload | null) => Promise<Result<RichProblem, 'unknown_problem' | 'unknown_error'>>;
       getAddressSuggestions: (query: string, userId: number) => Promise<Result<AddressSuggestion[], 'unknown_error'>>;
