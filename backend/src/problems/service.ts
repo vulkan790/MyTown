@@ -92,6 +92,8 @@ type AddCommentErrors = 'forbidden' | 'unknown_problem' | 'problem_is_closed' | 
 
 type VoteErrors = 'problem_is_closed' | 'unknown_problem' | 'unknown_error';
 
+type SolveProblemErrors = 'problem_is_closed' | 'forbidden' | 'unknown_problem' | 'unknown_error';
+
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
 
@@ -621,6 +623,61 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     return ok();
   };
 
+  const solveProblem = async (
+    {
+      id,
+      status,
+    }: { id: number; status: 'claim' | 'resolve' },
+    user: JwtPayload
+  ): Promise<Result<void, SolveProblemErrors>> => {
+    if (user.role !== 'gov') {
+      return err('forbidden');
+    }
+
+    const problemSelect = drizzle
+      .select({ id: problems.id, status: problems.status })
+      .from(problems)
+      .where(eq(problems.id, id));
+
+    const problemResult = await fromPromise(
+      problemSelect.then((r) => r.at(0)),
+      (e) => e
+    );
+
+    if (problemResult.isErr()) {
+      console.error('Error during getting problem for solving', problemResult.error);
+      return err('unknown_error');
+    }
+
+    const problem = problemResult.value;
+    if (!problem) {
+      return err('unknown_problem');
+    }
+
+    if (problem.status === PROBLEM_STATUS.ON_MODERATION || problem.status === PROBLEM_STATUS.REJECTED) {
+      return err('unknown_problem');
+    }
+
+    if (problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE && problem.status !== PROBLEM_STATUS.SOLVING) {
+      return err('problem_is_closed');
+    }
+
+    const newStatus = status === 'resolve' ? PROBLEM_STATUS.SOLVED : PROBLEM_STATUS.SOLVING;
+    const updateResult = await fromPromise(
+      drizzle.update(problems).set({
+        status: newStatus,
+      }).where(eq(problems.id, id)),
+      (e) => e
+    );
+
+    if (updateResult.isErr()) {
+      console.error('Error during problem update', updateResult.error);
+      return err('unknown_error');
+    }
+
+    return ok();
+  };
+
   const addComment = async (
     { problemId, content }: { problemId: number; content: string },
     user: JwtPayload
@@ -768,6 +825,7 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     uploadProblemImage,
     createProblem,
     moderateProblem,
+    solveProblem,
     addComment,
     vote,
   });
@@ -783,6 +841,7 @@ declare module 'fastify' {
       uploadProblemImage: (file?: MultipartFile['file'], mime?: string) => Promise<Result<UploadedeProblemImage, UploadProblemImageError>>;
       createProblem: (payload: CreateProblemPayload, userId: number) => Promise<CreateProblemResult>;
       moderateProblem: (id: number, status: 'approve' | 'reject', user: JwtPayload) => Promise<Result<void, ModerationErrors>>;
+      solveProblem: (problem: { id: number; status: 'claim' | 'resolve' }, user: JwtPayload) => Promise<Result<void, SolveProblemErrors>>;
       addComment: (commentPayload: { problemId: number; content: string }, user: JwtPayload) => Promise<Result<Comment, AddCommentErrors>>;
       vote: (votePayload: { problemId: number; userId: number; voteValue: number }) => Promise<Result<void, VoteErrors>>;
     };
