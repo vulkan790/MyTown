@@ -236,6 +236,7 @@ export const createProblem = async (problemData, token) => {
     const response = await api.post('problems', {
       headers: { 
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
       json: problemData
     });

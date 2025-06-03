@@ -1,21 +1,24 @@
 <script setup>
 
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuth } from '@/api/useAuth'
+import { useUser } from '@/api/useUser'
 import { createProblem, uploadProblemImage, getAddressSuggestions } from '@/api/client'
 import { debounce } from 'lodash-es'
 import AppHeader from '@/components/AppHeader.vue'
 
 const router = useRouter()
 const authStore = useAuth()
+const userStore = useUser()
 const { token } = storeToRefs(authStore)
+const { isLoggedIn } = storeToRefs(userStore)
 
-const UPLOAD_FILES_ENABLED = false
+const UPLOAD_FILES_ENABLED = true
 
 onMounted(() => {
-  if (!token.value) {
+  if (!isLoggedIn.value) {
     router.replace('/login')
   }
 })
@@ -32,46 +35,15 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const addressSuggestions = ref([])
 const showSuggestions = ref(false)
+const showLoading = ref(false)
 
 const MAX_FILE_COUNT = 5
 const MAX_TOTAL_SIZE_MB = 20
 const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
 
-const generateProblemUri = (title) => {
-  const translitMap = {
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
-    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
-    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
-    'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
-    'я': 'ya',
-    ' ': '-', '_': '-', '.': '-', ',': '-', '!': '', '?': '', '(': '', ')': '', '[': '', ']': ''
-  };
-  
-  let uri = title
-    .toLowerCase()
-    .split('')
-    .map(char => translitMap[char] || (char.match(/[a-z0-9-]/) ? char : '-'))
-    .join('')
-    .replace(/-+/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '')
-    .slice(0, 30);
-  
-  const timestamp = Date.now().toString(36).slice(-4);
-  const randomStr = Math.random().toString(36).substring(2, 6);
-  
-  return `${uri}-${timestamp}${randomStr}`;
-}
-
 const handleFileUpload = (event) => {
-  if (!token.value) {
+  if (!isLoggedIn.value) {
     router.replace('/login')
-    return
-  }
-
-  if (!UPLOAD_FILES_ENABLED) {
-    errorMessage.value = 'Загрузка файлов временно отключена. Пожалуйста, попробуйте позже.'
-    event.target.value = ''
     return
   }
 
@@ -131,12 +103,8 @@ const formatFileSize = (bytes) => {
 }
 
 const uploadFiles = async () => {
-  if (!token.value) {
+  if (!isLoggedIn.value) {
     router.replace('/login')
-    return []
-  }
-
-  if (!UPLOAD_FILES_ENABLED) {
     return []
   }
   
@@ -157,25 +125,31 @@ const uploadFiles = async () => {
 }
 
 const fetchAddressSuggestions = debounce(async (query) => {
-  if (!query.trim() || !token.value) {
+  if (!query.trim() || !isLoggedIn.value) {
     addressSuggestions.value = []
     showSuggestions.value = false
+    showLoading.value = false
     return
   }
+  
+  showLoading.value = true
   
   try {
     const suggestions = await getAddressSuggestions(query, token.value)
     addressSuggestions.value = suggestions || []
     showSuggestions.value = suggestions.length > 0
   } catch (error) {
-    if (error.message === 'Требуется авторизация') {
+    if (error.message === 'Authorization required') {
       authStore.removeToken()
       router.push('/login')
     } else {
       console.error('Ошибка получения подсказок:', error)
+      errorMessage.value = 'Ошибка получения подсказок адреса'
     }
     addressSuggestions.value = []
     showSuggestions.value = false
+  } finally {
+    showLoading.value = false
   }
 }, 300)
 
@@ -196,7 +170,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
 const handleSubmit = async () => {
   try {
-    if (!token.value) {
+    if (!isLoggedIn.value) {
       router.replace('/login')
       return
     }
@@ -214,55 +188,30 @@ const handleSubmit = async () => {
       throw new Error('Введите описание проблемы')
     }
 
-    const uploadResults = await uploadFiles()
-    const imageIds = uploadResults.map(item => item.id)
+    const imageIds = await uploadFiles()
     
     const problemData = {
       title: form.value.title,
       description: form.value.description,
       address: form.value.addressUri,
-      uri: generateProblemUri(form.value.title),
       images: imageIds,
     }
 
-    console.log('Sending problem data:', problemData)
-
-    try {
-      const response = await createProblem(problemData, token.value)
-      
-      if (!response?.id) {
-        throw new Error('Ошибка создания проблемы: неверный ответ сервера')
-      }
-      
-      router.push({ name: 'problem', params: { id: response.id } })
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        const textResponse = await error.response?.text();
-        console.error('Raw server response:', textResponse);
-        
-        throw new Error('Ошибка обработки ответа сервера: ' + (textResponse || error.message))
-      }
-      throw error;
+    const response = await createProblem(problemData, token.value)
+    
+    if (!response?.id) {
+      throw new Error('Ошибка создания проблемы: неверный ответ сервера')
     }
     
+    router.push({ name: 'problem', params: { id: response.id } })
+    
   } catch (error) {
-    if (error.message === 'Authorization required' || error.message === 'Требуется авторизация') {
+    if (error.message === 'Authorization required') {
       authStore.removeToken()
       router.replace('/login')
     } else {
       console.error('Full error:', error)
-      
-      let userMessage = error.message || 'Произошла ошибка при создании проблемы';
-      
-      if (error.response) {
-        if (error.response.status === 500) {
-          userMessage = 'Ошибка сервера. Пожалуйста, попробуйте позже или свяжитесь с поддержкой.';
-        } else if (error.response.data?.message) {
-          userMessage = error.response.data.message;
-        }
-      }
-      
-      errorMessage.value = userMessage;
+      errorMessage.value = error.message || 'Произошла ошибка при создании проблемы'
     }
   } finally {
     isSubmitting.value = false
@@ -287,7 +236,9 @@ const handleSubmit = async () => {
               id="problem-title"
               v-model.trim="form.title"
               placeholder="Напишите название проблемы"
-              required>
+              required
+              minlength="5"
+              maxlength="100">
           </div>
 
           <div class="form-group">
@@ -298,9 +249,15 @@ const handleSubmit = async () => {
                 id="problem-address"
                 v-model="form.addressDisplay"
                 @input="fetchAddressSuggestions($event.target.value)"
+                @focus="showLoading = true"
                 placeholder="Укажите место проблемы"
                 required
                 autocomplete="off">
+              
+              <div v-if="showLoading && !addressSuggestions.length" class="loading-indicator">
+                Поиск адресов...
+              </div>
+              
               <ul v-if="showSuggestions && addressSuggestions.length" class="suggestions-list">
                 <li
                   v-for="(suggestion, index) in addressSuggestions"
@@ -312,6 +269,7 @@ const handleSubmit = async () => {
                   <small>{{ suggestion.subtitle }}</small>
                 </li>
               </ul>
+              
               <div v-if="form.addressUri" class="address-hint">
                 Адрес подтвержден ✔
               </div>
@@ -322,9 +280,9 @@ const handleSubmit = async () => {
           </div>
 
           <div class="file-upload-group">
-            <label>Прикрепите материалы <span v-if="!UPLOAD_FILES_ENABLED" class="temp-disabled-hint">(временно отключено)</span></label>
+            <label>Прикрепите материалы</label>
             <div class="file-input-wrapper">
-              <label for="file-upload" class="upload-btn" :class="{ disabled: !UPLOAD_FILES_ENABLED }">
+              <label for="file-upload" class="upload-btn">
                 {{ files.length ? 'Добавить ещё' : 'Выбрать файлы' }}
               </label>
               <input
@@ -333,14 +291,9 @@ const handleSubmit = async () => {
                 multiple
                 accept="image/*, video/*"
                 hidden
-                :disabled="!UPLOAD_FILES_ENABLED"
                 @change="handleFileUpload">
               
-              <div v-if="!UPLOAD_FILES_ENABLED" class="temp-disabled-message">
-                Загрузка файлов временно недоступна. Приносим извинения за неудобства.
-              </div>
-              
-              <div v-else-if="files.length" class="file-list">
+              <div v-if="files.length" class="file-list">
                 <div v-for="(file, index) in files" :key="index" class="file-item">
                   <span class="file-name">{{ file.name }}</span>
                   <span class="file-size">({{ formatFileSize(file.size) }})</span>
@@ -364,7 +317,9 @@ const handleSubmit = async () => {
               v-model.trim="form.description"
               rows="5"
               placeholder="Опишите проблему подробно"
-              required></textarea>
+              required
+              minlength="10"
+              maxlength="1000"></textarea>
           </div>
 
           <div v-if="errorMessage" class="error-message">
