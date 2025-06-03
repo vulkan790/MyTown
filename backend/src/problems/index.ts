@@ -7,7 +7,11 @@ import * as schema from './schema.js';
 export async function ProblemsController (fastify: FastifyTypebox) {
   registerProblemsService(fastify);
 
-  fastify.get('/', { schema: schema.getAllProblemsSchema }, getProblems);
+  fastify.get('/', {
+    schema: schema.getAllProblemsSchema,
+    preHandler: fastify.jwtHelpers.tryAuthenticate,
+  }, getProblems);
+
   fastify.get('/hot', { schema: schema.getHotProblemsSchema }, getHotProblems);
   fastify.get('/address-suggest', {
     schema: schema.getAddressSuggestionsSchema,
@@ -39,7 +43,9 @@ async function getProblems (
 ) {
   const { page, limit, type } = request.query;
 
-  const result = await this.problemService.getProblems(page, limit, type);
+  const result = await this.problemService.getProblems({
+    page, limit, type, user: request.user,
+  });
   if (result.isOk()) {
     await reply.status(200).send({
       page: result.value.page,
