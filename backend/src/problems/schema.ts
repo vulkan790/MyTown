@@ -215,3 +215,26 @@ export const voteSchema = {
 } satisfies FastifySchema;
 
 export type VoteSchema = typeof voteSchema;
+
+// solve problem
+const solveProblemParams = Type.Object({
+  id: Type.Integer(),
+});
+
+const solveProblemBody = Type.Object({
+  action: Type.Union([
+    Type.Literal('claim'),
+    Type.Literal('resolve'),
+  ]),
+});
+
+export const solveProblemSchema = {
+  params: solveProblemParams,
+  body: solveProblemBody,
+
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type SolveProblemSchema = typeof solveProblemSchema;
