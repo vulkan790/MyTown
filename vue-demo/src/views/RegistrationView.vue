@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useForm } from '@tanstack/vue-form'
 import { useMutation } from '@tanstack/vue-query'
-import { register, verifyEmail, login } from '@/api/client'
+import { register, login } from '@/api/client'
 import { useAuth } from '@/api/useAuth'
 
 import AppHeaderWithGradientReg from '@/components/AppHeaderWithGradientReg.vue'
@@ -16,11 +16,6 @@ const router = useRouter()
 
 const isPasswordVisible = ref(false)
 const isConfirmPasswordVisible = ref(false)
-
-const registrationStep = ref(1) 
-const confirmationCode = ref('')
-const registrationPayload = ref(null)
-const confirmationError = ref('')
 
 const errorMap = {
   'must match format "email"': 'должен быть в формате email',
@@ -38,10 +33,7 @@ const errorMap = {
   'body/firstName': 'Имя',
   'body/lastName': 'Фамилия',
   'body/gender': 'Пол',
-  'body/agreement': 'Соглашение',
-  'token_expired': 'Срок действия кода истёк',
-  'invalid_token': 'Неверный код подтверждения',
-  'verification_failed': 'Ошибка подтверждения почты'
+  'body/agreement': 'Соглашение'
 };
 
 const translateError = (error) => {
@@ -85,26 +77,6 @@ const handleRegistrationError = async (error) => {
   }
 };
 
-const handleVerificationError = (error) => {
-  console.error('Verification error:', error);
-  
-  if (error.name === 'HTTPError' && error.response.status === 400) {
-    const errorType = error.data?.error;
-    switch (errorType) {
-      case 'token_expired':
-        confirmationError.value = 'Срок действия кода истёк';
-        break;
-      case 'invalid_token':
-        confirmationError.value = 'Неверный код подтверждения';
-        break;
-      default:
-        confirmationError.value = 'Ошибка подтверждения почты';
-    }
-  } else {
-    confirmationError.value = 'Ошибка сервера. Попробуйте позже';
-  }
-};
-
 const togglePasswordVisibility = () => {
   isPasswordVisible.value = !isPasswordVisible.value;
 };
@@ -115,29 +87,20 @@ const toggleConfirmPasswordVisibility = () => {
 
 const { isPending: isRegistering, mutateAsync: registerUser } = useMutation({
   mutationFn: register,
-  onSuccess: () => {
-    registrationStep.value = 2;
-  },
-  onError: handleRegistrationError,
-  throwOnError: false,
-});
-
-const { isPending: isConfirming, mutateAsync: confirmEmail } = useMutation({
-  mutationFn: verifyEmail,
-  onSuccess: async () => {
+  onSuccess: async (_, variables) => {
     try {
       const loginData = await login(
-        registrationPayload.value.email,
-        registrationPayload.value.password
+        variables.email,
+        variables.password
       );
       auth.setToken(loginData.accessToken);
       router.push('/');
     } catch (error) {
-      console.error('Login after confirmation failed:', error);
-      confirmationError.value = 'Ошибка входа после подтверждения';
+      console.error('Login after registration failed:', error);
+      alert('Ошибка автоматического входа. Пожалуйста, войдите вручную');
     }
   },
-  onError: handleVerificationError,
+  onError: handleRegistrationError,
   throwOnError: false,
 });
 
@@ -163,7 +126,7 @@ const form = useForm({
       !value ? 'Необходимо принять пользовательское соглашение' : undefined
   },
   onSubmit: async ({ value: formData }) => {
-    registrationPayload.value = {
+    const payload = {
       email: formData.email.toLowerCase(),
       password: formData.password,
       firstName: formData.firstName,
@@ -173,9 +136,9 @@ const form = useForm({
     }
 
     try {
-      await registerUser(registrationPayload.value);
+      await registerUser(payload);
     } catch (e) {
-      
+      // Ошибка обрабатывается в handleRegistrationError
     }
   },
   defaultValues: {
@@ -189,17 +152,6 @@ const form = useForm({
     gender: 'male'
   },
 })
-
-const handleConfirmation = () => {
-  confirmationError.value = '';
-  
-  if (!confirmationCode.value.match(/^\d{6}$/)) {
-    confirmationError.value = 'Код должен содержать 6 цифр';
-    return;
-  }
-  
-  confirmEmail(confirmationCode.value);
-}
 </script>
 
 <template>
@@ -209,7 +161,7 @@ const handleConfirmation = () => {
     <div class="container">
       <section class="reg-container">
         <div class="process-reg">
-          <form v-if="registrationStep === 1" @submit.prevent.stop="form.handleSubmit">
+          <form @submit.prevent.stop="form.handleSubmit">
             <form.Field name="lastName">
               <template v-slot="{ field, meta }">
                 <div class="form-group">
@@ -340,52 +292,13 @@ const handleConfirmation = () => {
               <button type="submit" class="register-btn"
                 :disabled="isRegistering" 
                 style="color: white; border: none; font-size: 20px;">
-                {{ isRegistering ? 'Отправка кода...' : 'Отправить код подтверждения' }}
+                {{ isRegistering ? 'Регистрация...' : 'Зарегистрироваться' }}
               </button>
               <router-link to="/login" class="login-title">
                 Уже имеете аккаунт?
               </router-link>
             </div>
           </form>
-
-          <div v-else class="confirmation-step">
-            <h2>Подтверждение почты</h2>
-            <p>На вашу почту <strong>{{ registrationPayload.email }}</strong> отправлен код подтверждения.</p>
-            <p>Пожалуйста, введите его в поле ниже:</p>
-            
-            <div class="form-group">
-              <label class="label-control">Код подтверждения</label>
-              <input 
-                v-model="confirmationCode"
-                type="text" 
-                placeholder="Введите 6-значный код"
-                maxlength="6"
-                class="confirmation-code-input"/>
-              <button 
-                @click="resendCode"
-                :disabled="countdown > 0"
-                class="resend-code-btn">
-                {{ countdown > 0 ? `Отправить повторно (${countdown})` : 'Отправить код повторно' }}
-              </button>
-            </div>
-
-            <div class="register-container">
-              <button 
-                @click="handleConfirmation"
-                class="register-btn"
-                :disabled="isConfirming || !confirmationCode"
-                style="color: white; border: none; font-size: 20px;">
-                {{ isConfirming ? 'Подтверждение...' : 'Подтвердить' }}
-              </button>
-              
-              <button 
-                @click="registrationStep = 1"
-                class="login-title"
-                style="background: none; border: none; cursor: pointer; margin-top: 10px;">
-                Изменить данные
-              </button>
-            </div>
-          </div>
         </div>
         
         <div class="login-section">

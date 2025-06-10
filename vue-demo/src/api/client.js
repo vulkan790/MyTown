@@ -28,6 +28,7 @@ export const api = ky.extend({
  * @property {string[]} images
  * @property {Status} status
  * @property {number} votes
+ * @property {number} [vote] 
  * @property {string} createdAt - ISO date string
  * @property {Author} author
  */
@@ -293,9 +294,38 @@ export function updateProblemStatus(id, action, token) {
  * @param {string} token
  * @returns {Promise<AddCommentResponse>}
  */
-export function addCommentToProblem(id, content, token) {
-  return api.post(`problems/${id}/comments`, {
-    headers: { Authorization: `Bearer ${token}` },
-    json: { content },
-  }).json()
+export const addCommentToProblem = async (problemId, content, token) => {
+  try {
+    const response = await axios.post(
+      `/api/problems/${problemId}/comment`,
+      { content },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+    return response.data
+  } catch (error) {
+    console.error('Error adding comment:', error)
+    throw error
+  }
+}
+
+/**
+ * Vote for a problem.
+ * @param {number} id
+ * @param {number} vote - -1, 0, or 1
+ * @param {string} token
+ * @returns {Promise<void>}
+ */
+export function addVoteToProblem(id, vote, token) {
+  return api.post(`problems/${id}/vote`, {
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    json: { vote }
+  })
 }

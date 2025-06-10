@@ -8,26 +8,25 @@ export const useUser = defineStore('user', () => {
   const auth = useAuth()
 
   const { data: user, isError, isPending, refetch } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => getCurrentUser(auth.token),
+    queryKey: ['user', auth.token],
+    queryFn: () => auth.token ? getCurrentUser(auth.token) : null,
     retry: false,
     refetchInterval: false,
     refetchIntervalInBackground: false,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   watchEffect(() => {
     if (auth.token) {
       refetch()
+    } else {
+      user.value = null
     }
   })
 
   const isLoggedIn = computed(() => {
-    if (!auth.token) return false
-    if (isPending.value) return false
-    if (isError.value) return false
-    return true
+    return !!auth.token && !!user.value && !isError.value
   })
 
   const isVerified = computed(() => {

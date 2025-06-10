@@ -378,11 +378,13 @@ body {
   width: 250px;
   height: 50px;
   background-color: #3786BE;
+  border: transparent;
   border-radius: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  font-size: 22px;
 }
 
 .btn-answer:hover {
@@ -860,7 +862,6 @@ body {
   align-items: center;
   justify-content: center;
   list-style: none;
-  margin-bottom: 525px;
 }
 
 .next-link {

@@ -46,7 +46,7 @@ const handleSubmit = async () => {
     <div class="container">
       <section class="reg-container">
         <div class="login-section-in">
-          <p class="main-text-login"><strong>Почта, на которую пришлём код!</strong></p>
+          <p class="main-text-login"><strong>Почта, на которую пришлём сообщение!</strong></p>
           <p class="second-text">Введите почту, чтобы мы могли восстановить пароль.</p>
         </div>
 
@@ -71,6 +71,7 @@ const handleSubmit = async () => {
                     {{ isSubmitting ? 'Отправка...' : 'Далее' }}
                   </span>
                 </button>
+                <router-link to="/login" class="login-title" style="margin-bottom: 525px; margin-top: 40px">Вернуться в авторизацию</router-link>
               </div>
             </div>
           </form>
