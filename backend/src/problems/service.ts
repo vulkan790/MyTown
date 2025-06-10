@@ -711,6 +711,10 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
         return err('unknown_problem');
       }
 
+      if (problem.status === PROBLEM_STATUS.ON_MODERATION || problem.status === PROBLEM_STATUS.REJECTED) {
+        return err('unknown_problem');
+      }
+
       if (problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE && problem.status !== PROBLEM_STATUS.SOLVING) {
         return err('problem_is_closed');
       }
