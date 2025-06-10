@@ -703,8 +703,8 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     const transaction = drizzle.transaction(async (tx): Promise<Result<Comment, AddCommentErrors>> => {
       const problemList = await tx
         .select({ id: problems.id, status: problems.status })
-        .from(problemComments)
-        .where(eq(problemComments.problemId, problemId));
+        .from(problems)
+        .where(eq(problems.id, problemId));
 
       const problem = problemList.at(0);
       if (!problem) {
