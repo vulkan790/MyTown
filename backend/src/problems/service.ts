@@ -555,7 +555,6 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       }
 
       const coordinates = coordinatesResult.value;
-      console.log('coordinates', coordinates);
       const newProblemId = await tx.insert(problems).values({
         title,
         description,
