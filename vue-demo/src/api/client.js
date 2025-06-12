@@ -295,22 +295,13 @@ export function updateProblemStatus(id, action, token) {
  * @returns {Promise<AddCommentResponse>}
  */
 export const addCommentToProblem = async (problemId, content, token) => {
-  try {
-    const response = await axios.post(
-      `/api/problems/${problemId}/comment`,
-      { content },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    )
-    return response.data
-  } catch (error) {
-    console.error('Error adding comment:', error)
-    throw error
-  }
+  return api.post(`problems/${problemId}/comments`, {
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    json: { content }
+  }).json()
 }
 
 /**

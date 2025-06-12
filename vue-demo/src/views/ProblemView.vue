@@ -47,8 +47,16 @@ const commentContent = ref('')
 const isSubmittingComment = ref(false)
 const commentError = ref(null)
 
+const isModOrAdmin = computed(() => {
+  return userStore.user?.role === 'mod' || userStore.user?.role === 'admin'
+})
+
+const isModerating = ref(false)
+const moderateError = ref(null)
+const isProblemJustified = ref(null)
+
 const canComment = computed(() => {
-  return isGov.value || ['mod', 'admin'].includes(userStore.user?.role)
+  return !!auth.token && (isGov.value || ['mod', 'admin'].includes(userStore.user?.role))
 })
 
 const handleClaim = async () => {
@@ -119,7 +127,32 @@ const handleVote = async (voteValue) => {
   }
 }
 
+const handleModerate = async (decision) => {
+  if (isModerating.value) return
+  isModerating.value = true
+  moderateError.value = null
+  
+  try {
+    await moderateProblem(problem.value.id, decision, auth.token)
+    isProblemJustified.value = decision === 'approve'
+    
+    if (decision === 'reject') {
+      setTimeout(() => router.push('/problems/all'), 1500)
+    }
+  } catch (error) {
+    console.error('Ошибка модерации:', error)
+    moderateError.value = 'Ошибка при модерации проблемы'
+  } finally {
+    isModerating.value = false
+  }
+}
+
 const submitComment = async () => {
+  if (!auth.token) {
+    router.push('/login')
+    return
+  }
+
   if (!commentContent.value.trim()) {
     commentError.value = 'Комментарий не может быть пустым'
     return
@@ -208,41 +241,81 @@ const submitComment = async () => {
             </div>
           </div>
           <div v-else>
-            <p class="question-problem" style="margin-left: 210px">
-              Стоит ли решать данную проблему?
-            </p>
-            <div class="problem__status">
-              <div class="status-number">{{ problem.votes }} голосов</div>
-              <div>
-                <button 
-                  class="btn-answer"
-                  :class="{ 
-                    active: problem.vote === 1,
-                    disabled: !canVote
-                  }"
-                  @click="handleVote(1)"
-                  :disabled="isVoting || !canVote"
-                >
-                  Да
-                </button>
+            <template v-if="isModOrAdmin && problem.status === 'on_moderation'">
+              <p class="question-problem" style="margin-left: 210px">
+                Обоснована ли проблема?
+              </p>
+              
+              <div v-if="isProblemJustified === null" class="problem__status">
+                <div>
+                  <button 
+                    class="btn-answer"
+                    @click="handleModerate('approve')"
+                    :disabled="isModerating"
+                  >
+                    Да
+                  </button>
+                </div>
+                <div>
+                  <button 
+                    class="btn-answer"
+                    @click="handleModerate('reject')"
+                    :disabled="isModerating"
+                  >
+                    Нет
+                  </button>
+                </div>
               </div>
-              <div>
-                <button 
-                  class="btn-answer"
-                  :class="{ 
-                    active: problem.vote === -1,
-                    disabled: !canVote
-                  }"
-                  @click="handleVote(-1)"
-                  :disabled="isVoting || !canVote"
-                >
-                  Нет
-                </button>
+              
+              <div v-else-if="isProblemJustified" class="moderation-result">
+                Принято
               </div>
-            </div>
-            <div v-if="voteError" class="error-message" style="color: red; margin-top: 10px;">
-              {{ voteError }}
-            </div>
+              
+              <div v-else class="moderation-result">
+                Проблема удаляется...
+              </div>
+              
+              <div v-if="moderateError" class="error-message" style="color: red; margin-top: 10px;">
+                {{ moderateError }}
+              </div>
+            </template>
+            <template v-else>
+              <p class="question-problem" style="margin-left: 210px">
+                Стоит ли решать данную проблему?
+              </p>
+              <div class="problem__status">
+                <div class="status-number">{{ problem.votes }} голосов</div>
+                <div>
+                  <button 
+                    class="btn-answer"
+                    :class="{ 
+                      active: problem.vote === 1,
+                      disabled: !canVote
+                    }"
+                    @click="handleVote(1)"
+                    :disabled="isVoting || !canVote"
+                  >
+                    Да
+                  </button>
+                </div>
+                <div>
+                  <button 
+                    class="btn-answer"
+                    :class="{ 
+                      active: problem.vote === -1,
+                      disabled: !canVote
+                    }"
+                    @click="handleVote(-1)"
+                    :disabled="isVoting || !canVote"
+                  >
+                    Нет
+                  </button>
+                </div>
+              </div>
+              <div v-if="voteError" class="error-message" style="color: red; margin-top: 10px;">
+                {{ voteError }}
+              </div>
+            </template>
           </div>
         </div>
       </section>
