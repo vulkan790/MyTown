@@ -559,7 +559,7 @@ query (всё, что идет после вопроса в конце URL), pat
 // empty
 ```
 
-## POST /api/problems/:id/votes
+## POST /api/problems/:id/vote
 
 Проголосовать за/против проблемы.
 

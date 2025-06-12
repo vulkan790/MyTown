@@ -99,7 +99,7 @@ type AddCommentErrors = 'forbidden' | 'unknown_problem' | 'problem_is_closed' | 
 
 type VoteErrors = 'problem_is_closed' | 'unknown_problem' | 'unknown_error';
 
-type SolveProblemErrors = 'problem_is_closed' | 'forbidden' | 'unknown_problem' | 'unknown_error';
+type SolveProblemErrors = 'problem_is_closed' | 'problem_is_claimed' | 'problem_is_not_claimed' | 'forbidden' | 'unknown_problem' | 'unknown_error';
 
 export const registerProblemsService = async (fastify: FastifyInstance) => {
   const { drizzle } = fastify;
@@ -555,7 +555,6 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       }
 
       const coordinates = coordinatesResult.value;
-      console.log('coordinates', coordinates);
       const newProblemId = await tx.insert(problems).values({
         title,
         description,
@@ -672,14 +671,29 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
       return err('unknown_problem');
     }
 
-    if (problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE && problem.status !== PROBLEM_STATUS.SOLVING) {
+    if (problem.status === PROBLEM_STATUS.SOLVED) {
       return err('problem_is_closed');
     }
 
-    const newStatus = status === 'resolve' ? PROBLEM_STATUS.SOLVED : PROBLEM_STATUS.SOLVING;
+    let newStatus: typeof PROBLEM_STATUS[keyof typeof PROBLEM_STATUS];
+
+    if (status === 'claim' && problem.status !== PROBLEM_STATUS.WAIT_FOR_SOLVE) {
+      return err('problem_is_claimed');
+    }
+    if (status === 'claim' && problem.status === PROBLEM_STATUS.WAIT_FOR_SOLVE) {
+      newStatus = PROBLEM_STATUS.SOLVING;
+    }
+
+    if (status === 'resolve' && problem.status !== PROBLEM_STATUS.SOLVING) {
+      return err('problem_is_not_claimed');
+    }
+    if (status === 'resolve' && problem.status === PROBLEM_STATUS.SOLVING) {
+      newStatus = PROBLEM_STATUS.SOLVED;
+    }
+
     const updateResult = await fromPromise(
       drizzle.update(problems).set({
-        status: newStatus,
+        status: newStatus!,
       }).where(eq(problems.id, id)),
       (e) => e
     );
@@ -703,11 +717,15 @@ export const registerProblemsService = async (fastify: FastifyInstance) => {
     const transaction = drizzle.transaction(async (tx): Promise<Result<Comment, AddCommentErrors>> => {
       const problemList = await tx
         .select({ id: problems.id, status: problems.status })
-        .from(problemComments)
-        .where(eq(problemComments.problemId, problemId));
+        .from(problems)
+        .where(eq(problems.id, problemId));
 
       const problem = problemList.at(0);
       if (!problem) {
+        return err('unknown_problem');
+      }
+
+      if (problem.status === PROBLEM_STATUS.ON_MODERATION || problem.status === PROBLEM_STATUS.REJECTED) {
         return err('unknown_problem');
       }
 
