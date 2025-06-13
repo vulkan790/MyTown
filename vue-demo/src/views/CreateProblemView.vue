@@ -270,9 +270,6 @@ const handleSubmit = async () => {
                 </li>
               </ul>
               
-              <div v-if="form.addressUri" class="address-hint">
-                Адрес подтвержден ✔
-              </div>
               <div v-else-if="form.addressDisplay" class="address-warning">
                 Выберите адрес из списка
               </div>

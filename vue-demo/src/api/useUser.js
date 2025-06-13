@@ -7,13 +7,16 @@ import { useAuth } from './useAuth'
 export const useUser = defineStore('user', () => {
   const auth = useAuth()
 
-  const { data: user, isError, isPending, refetch } = useQuery({
+  const { 
+    data: user, 
+    isError, 
+    isPending, 
+    refetch,
+    error
+  } = useQuery({
     queryKey: ['user', auth.token],
     queryFn: () => auth.token ? getCurrentUser(auth.token) : null,
     retry: false,
-    refetchInterval: false,
-    refetchIntervalInBackground: false,
-    refetchOnMount: true,
     refetchOnWindowFocus: true,
   })
 
@@ -29,15 +32,20 @@ export const useUser = defineStore('user', () => {
     return !!auth.token && !!user.value && !isError.value
   })
 
-  const isVerified = computed(() => {
-    return user.value?.emailVerified || false
+  const role = computed(() => user.value?.role || null)
+  
+  const isPrivilegedUser = computed(() => {
+    return ['gov', 'admin', 'mod'].includes(role.value)
   })
 
   return {
     user,
     isPending,
     isError,
+    error,
     isLoggedIn,
-    isVerified
+    role,
+    isPrivilegedUser,
+    refetch
   }
 })

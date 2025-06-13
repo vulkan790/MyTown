@@ -102,8 +102,12 @@ export const api = ky.extend({
  * @param {number} [limit=12]
  * @returns {Promise<PaginatedResponse<Problem>>}
  */
-export function getProblems(page = 1, limit = 12) {
-  return api.get('problems', { searchParams: { page, limit } }).json()
+export function getProblems(page = 1, limit = 12, type) {
+  const searchParams = { page, limit };
+  if (type !== undefined) {
+    searchParams.type = type;
+  }
+  return api.get('problems', { searchParams }).json();
 }
 
 /**
