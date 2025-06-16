@@ -14,7 +14,7 @@ const getProblemType = computed(() => {
   if (!userStore.user) return undefined
   
   if (['gov', 'admin', 'mod'].includes(userStore.user.role)) {
-    return ''
+    return null
   }
   return undefined
 })

@@ -22,17 +22,38 @@ const loginForm = useForm({
       await loginMutation.mutateAsync(loginPayload)
       router.push('/')
     } catch (e) {
-      console.error(e)
-      if (e.name === 'HTTPError' && e.response.status === 400) {
-        loginForm.setFieldError('email', 'Неверный логин или пароль')
-        loginForm.setFieldError('password', 'Неверный логин или пароль')
+      console.error('Login error:', e)
+      
+      let errorMessage = 'Сетевая ошибка. Проверьте соединение'
+      
+      if (e.response) {
+        if (e.response.status === 401) {
+          errorMessage = 'Неправильный логин или пароль'
+        } else if (e.response.status === 400) {
+          errorMessage = 'Проверьте введенные данные'
+        }
       }
+      
+      alert(errorMessage)
     }
   },
   defaultValues: {
     email: '',
     password: '',
   },
+  validators: {
+    email: ({ value }) => {
+      if (!value) return 'Поле обязательно для заполнения'
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(value)) return 'Введите корректный email'
+      return null
+    },
+    password: ({ value }) => {
+      if (!value) return 'Поле обязательно для заполнения'
+      if (value.length < 6) return 'Пароль должен быть не менее 6 символов'
+      return null
+    } 
+  }
 })
 
 const loginMutation = useMutation({
@@ -40,7 +61,7 @@ const loginMutation = useMutation({
   onSuccess: (data) => {
     auth.setToken(data.accessToken)
   },
-  throwOnError: false,
+  throwOnError: true,
 })
 
 const togglePasswordVisibility = () => {

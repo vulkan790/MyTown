@@ -2,12 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import RememberPasswordView from '@/views/RememberPasswordView.vue'
 import LogoutView from '@/views/LogoutView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ProblemsListView from '@/views/ProblemsListView.vue'
 import ProblemView from '@/views/ProblemView.vue'
 import CreateProblemView from '@/views/CreateProblemView.vue'
 import RegistrationView from '@/views/RegistrationView.vue';
+import VerifyEmailView from '@/views/VerifyEmailView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +18,11 @@ const router = createRouter({
       path: '/registration',
       name: 'registration',
       component: RegistrationView,
+    },
+    {
+      path: '/verify-email',
+      name: 'verify-email',
+      component: VerifyEmailView,
     },
     {
       path: '/',
@@ -31,6 +38,11 @@ const router = createRouter({
       path: '/forgot-password',
       name: 'forgot-password',
       component: ForgotPasswordView,
+    },
+    {
+      path: '/remember-password',
+      name: 'remember-password',
+      component: RememberPasswordView,
     },
     {
       path: '/logout',

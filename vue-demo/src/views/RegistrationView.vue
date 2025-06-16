@@ -16,6 +16,7 @@ const router = useRouter()
 
 const isPasswordVisible = ref(false)
 const isConfirmPasswordVisible = ref(false)
+const showSuccessMessage = ref(false)
 
 const errorMap = {
   'must match format "email"': 'должен быть в формате email',
@@ -87,18 +88,8 @@ const toggleConfirmPasswordVisibility = () => {
 
 const { isPending: isRegistering, mutateAsync: registerUser } = useMutation({
   mutationFn: register,
-  onSuccess: async (_, variables) => {
-    try {
-      const loginData = await login(
-        variables.email,
-        variables.password
-      );
-      auth.setToken(loginData.accessToken);
-      router.push('/');
-    } catch (error) {
-      console.error('Login after registration failed:', error);
-      alert('Ошибка автоматического входа. Пожалуйста, войдите вручную');
-    }
+  onSuccess: () => {
+    showSuccessMessage.value = true
   },
   onError: handleRegistrationError,
   throwOnError: false,
@@ -160,7 +151,35 @@ const form = useForm({
   <main class="main" style="background: linear-gradient(to right, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
     <div class="container">
       <section class="reg-container">
-        <div class="process-reg">
+        <div v-if="showSuccessMessage" class="success-message-container">
+          <div class="success-card">
+            <div class="success-icon">✓</div>
+            <h2 class="success-title">Регистрация почти завершена!</h2>
+            <div class="success-content">
+              <p>Мы отправили письмо с подтверждением на:</p>
+              <p class="user-email">{{ form.getFieldValue('email') }}</p>
+              <p>Пожалуйста, проверьте вашу почту и перейдите по ссылке в письме, чтобы завершить регистрацию.</p>
+              <div class="success-tips">
+                <p><strong>Не получили письмо?</strong></p>
+                <ul>
+                  <li>Проверьте папку "Спам"</li>
+                  <li>Убедитесь в правильности email</li>
+                  <li>Подождите несколько минут</li>
+                </ul>
+              </div>
+            </div>
+            <div class="success-actions">
+              <button @click="router.push('/')" class="btn-home">
+                На главную
+              </button>
+              <router-link to="/login" class="btn-login">
+                Войти
+              </router-link>
+            </div>
+          </div>
+        </div>
+        
+        <div v-else class="process-reg">
           <form @submit.prevent.stop="form.handleSubmit">
             <form.Field name="lastName">
               <template v-slot="{ field, meta }">

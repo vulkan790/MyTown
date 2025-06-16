@@ -137,7 +137,10 @@ export function getHotProblems() {
  * @returns {Promise<LoginResponse>}
  */
 export function login(email, password) {
-  return api.post('auth/login', { json: { email, password } }).json()
+  return api.post('auth/login', { 
+    json: { email, password },
+    throwHttpErrors: false 
+  }).json()
 }
 
 /**
@@ -162,6 +165,28 @@ export function register(userData) {
  */
 export function verifyEmail(token) {
   return api.post('auth/verify', { json: { token } }).json();
+}
+
+/**
+ * Отправить код восстановления пароля
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export function requestPasswordReset(email) {
+  return api.post('auth/forgot-password', { json: { email } }).json();
+}
+
+/**
+ * Сбросить пароль с помощью кода
+ * @param {string} email
+ * @param {string} code
+ * @param {string} newPassword
+ * @returns {Promise<void>}
+ */
+export function resetPassword(email, code, newPassword) {
+  return api.post('auth/reset-password', { 
+    json: { email, code, newPassword } 
+  }).json();
 }
 
 /**

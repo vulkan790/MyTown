@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuth } from '@/api/useAuth'
@@ -15,27 +15,21 @@ const userStore = useUser()
 const { token } = storeToRefs(authStore)
 const { isLoggedIn } = storeToRefs(userStore)
 
-const UPLOAD_FILES_ENABLED = true
-
-onMounted(() => {
-  if (!isLoggedIn.value) {
-    router.replace('/login')
-  }
-})
-
 const form = ref({
   title: '',
   addressDisplay: '',
   addressUri: '',
-  description: '',
+  description: ''
 })
 
 const files = ref([])
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
 const addressSuggestions = ref([])
 const showSuggestions = ref(false)
 const showLoading = ref(false)
+const addressTouched = ref(false)
 
 const MAX_FILE_COUNT = 5
 const MAX_TOTAL_SIZE_MB = 20
@@ -50,14 +44,14 @@ const handleFileUpload = (event) => {
   const newFiles = Array.from(event.target.files)
   
   if (files.value.length + newFiles.length > MAX_FILE_COUNT) {
-    errorMessage.value = `Максимум ${MAX_FILE_COUNT} файлов`
+    errorMessage.value = `Можно загрузить не более ${MAX_FILE_COUNT} файлов`
     event.target.value = ''
     return
   }
 
   const totalSize = [...files.value, ...newFiles].reduce((acc, file) => acc + file.size, 0)
   if (totalSize > MAX_TOTAL_SIZE_BYTES) {
-    errorMessage.value = `Общий размер не должен превышать ${MAX_TOTAL_SIZE_MB}MB`
+    errorMessage.value = `Общий размер файлов не должен превышать ${MAX_TOTAL_SIZE_MB}MB`
     event.target.value = ''
     return
   }
@@ -74,8 +68,7 @@ const handleFileUpload = (event) => {
   const invalidFiles = newFiles.filter(file => !validTypes.includes(file.type))
   
   if (invalidFiles.length > 0) {
-    const invalidNames = invalidFiles.map(f => f.name).join(', ')
-    errorMessage.value = `Недопустимые форматы файлов: ${invalidNames}`
+    errorMessage.value = `Недопустимые форматы файлов: ${invalidFiles.map(f => f.name).join(', ')}`
     event.target.value = ''
     return
   }
@@ -104,7 +97,6 @@ const formatFileSize = (bytes) => {
 
 const uploadFiles = async () => {
   if (!isLoggedIn.value) {
-    router.replace('/login')
     return []
   }
   
@@ -133,6 +125,7 @@ const fetchAddressSuggestions = debounce(async (query) => {
   }
   
   showLoading.value = true
+  addressTouched.value = true
   
   try {
     const suggestions = await getAddressSuggestions(query, token.value)
@@ -154,7 +147,7 @@ const fetchAddressSuggestions = debounce(async (query) => {
 }, 300)
 
 const selectAddress = (suggestion) => {
-  form.value.addressDisplay = suggestion.title 
+  form.value.addressDisplay = suggestion.title
   form.value.addressUri = suggestion.uri
   showSuggestions.value = false
 }
@@ -177,11 +170,13 @@ const handleSubmit = async () => {
 
     isSubmitting.value = true
     errorMessage.value = ''
+    successMessage.value = ''
 
     if (!form.value.title.trim()) {
       throw new Error('Введите название проблемы')
     }
     if (!form.value.addressUri) {
+      addressTouched.value = true
       throw new Error('Выберите адрес из предложенных вариантов')
     }
     if (!form.value.description.trim()) {
@@ -194,7 +189,7 @@ const handleSubmit = async () => {
       title: form.value.title,
       description: form.value.description,
       address: form.value.addressUri,
-      images: imageIds,
+      images: imageIds
     }
 
     const response = await createProblem(problemData, token.value)
@@ -203,14 +198,17 @@ const handleSubmit = async () => {
       throw new Error('Ошибка создания проблемы: неверный ответ сервера')
     }
     
-    router.push({ name: 'problem', params: { id: response.id } })
+    successMessage.value = 'Проблема успешно создана! Перенаправляем...'
+    setTimeout(() => {
+      router.push({ name: 'problem', params: { id: response.id } })
+    }, 1500)
     
   } catch (error) {
     if (error.message === 'Authorization required') {
       authStore.removeToken()
       router.replace('/login')
     } else {
-      console.error('Full error:', error)
+      console.error('Ошибка:', error)
       errorMessage.value = error.message || 'Произошла ошибка при создании проблемы'
     }
   } finally {
@@ -228,13 +226,13 @@ const handleSubmit = async () => {
         <h1>Сообщить о проблеме</h1>
         <form class="report-form" @submit.prevent="handleSubmit">
           <p class="form-message">Ваше сообщение поможет сделать город лучше!</p>
-          
+
           <div class="form-group">
             <label for="problem-title">Название проблемы</label>
             <input
               type="text"
               id="problem-title"
-              v-model.trim="form.title"
+              v-model="form.title"
               placeholder="Напишите название проблемы"
               required
               minlength="5"
@@ -242,7 +240,7 @@ const handleSubmit = async () => {
           </div>
 
           <div class="form-group">
-            <label for="problem-address">Адрес</label>
+            <label for="problem-address">Адрес проблемы</label>
             <div class="address-autocomplete">
               <input
                 type="text"
@@ -253,10 +251,6 @@ const handleSubmit = async () => {
                 placeholder="Укажите место проблемы"
                 required
                 autocomplete="off">
-              
-              <div v-if="showLoading && !addressSuggestions.length" class="loading-indicator">
-                Поиск адресов...
-              </div>
               
               <ul v-if="showSuggestions && addressSuggestions.length" class="suggestions-list">
                 <li
@@ -270,25 +264,25 @@ const handleSubmit = async () => {
                 </li>
               </ul>
               
-              <div v-else-if="form.addressDisplay" class="address-warning">
-                Выберите адрес из списка
-              </div>
             </div>
+            <small v-if="addressTouched && !form.addressUri" class="error">
+              Выберите адрес из списка
+            </small>
           </div>
 
           <div class="file-upload-group">
             <label>Прикрепите материалы</label>
             <div class="file-input-wrapper">
               <label for="file-upload" class="upload-btn">
-                {{ files.length ? 'Добавить ещё' : 'Выбрать файлы' }}
+                <span>{{ files.length ? 'Добавить ещё' : 'Выбрать файлы' }}</span>
+                <input
+                  type="file"
+                  id="file-upload"
+                  multiple
+                  accept="image/*, video/*"
+                  hidden
+                  @change="handleFileUpload">
               </label>
-              <input
-                type="file"
-                id="file-upload"
-                multiple
-                accept="image/*, video/*"
-                hidden
-                @change="handleFileUpload">
               
               <div v-if="files.length" class="file-list">
                 <div v-for="(file, index) in files" :key="index" class="file-item">
@@ -297,7 +291,10 @@ const handleSubmit = async () => {
                   <button
                     type="button"
                     class="delete-btn"
-                    @click="removeFile(index)">×</button>
+                    @click="removeFile(index)"
+                    aria-label="Удалить файл">
+                    ×
+                  </button>
                 </div>
               </div>
               <div class="file-requirements">
@@ -311,7 +308,7 @@ const handleSubmit = async () => {
             <label for="problem-description">Подробное описание</label>
             <textarea
               id="problem-description"
-              v-model.trim="form.description"
+              v-model="form.description"
               rows="5"
               placeholder="Опишите проблему подробно"
               required
@@ -321,6 +318,9 @@ const handleSubmit = async () => {
 
           <div v-if="errorMessage" class="error-message">
             {{ errorMessage }}
+          </div>
+          <div v-if="successMessage" class="success-message">
+            {{ successMessage }}
           </div>
 
           <button

@@ -2,20 +2,22 @@
 
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { requestPasswordReset } from '@/api/client'
 
 import AppHeaderWithGradient from '@/components/AppHeaderWithGradient.vue'
 
 const router = useRouter()
 const email = ref('')
 const isSubmitting = ref(false)
+const errorMessage = ref('')
 
 const validateEmail = () => {
   if (!email.value.trim()) {
-    alert('Пожалуйста, введите email')
+    errorMessage.value = 'Пожалуйста, введите email'
     return false
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-    alert('Пожалуйста, введите корректный email')
+    errorMessage.value = 'Пожалуйста, введите корректный email'
     return false
   }
   return true
@@ -27,12 +29,15 @@ const handleSubmit = async () => {
     
     if (!validateEmail()) return
 
-    console.log('Email для восстановления:', email.value)
-    router.push('/remember-code')
+    await requestPasswordReset(email.value)
+    router.push({ 
+      path: '/remember-code', 
+      query: { email: email.value } 
+    })
     
   } catch (error) {
     console.error('Ошибка:', error)
-    alert(error.message || 'Произошла ошибка при отправке')
+    errorMessage.value = error.message || 'Произошла ошибка при отправке'
   } finally {
     isSubmitting.value = false
   }
@@ -57,8 +62,8 @@ const handleSubmit = async () => {
               <input
                 v-model.trim="email"
                 type="email"
-                placeholder="Введите email"
-              >
+                placeholder="Введите email">
+              <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
             </div>
             
             <div class="agreement-section">
@@ -66,7 +71,8 @@ const handleSubmit = async () => {
                 <button 
                   type="submit" 
                   class="next-btn"
-                  :disabled="isSubmitting">
+                  :disabled="isSubmitting"
+                  style="border: none;">
                   <span class="next-link">
                     {{ isSubmitting ? 'Отправка...' : 'Далее' }}
                   </span>
@@ -79,5 +85,5 @@ const handleSubmit = async () => {
       </section>
     </div>
   </main>
-
+  
 </template>

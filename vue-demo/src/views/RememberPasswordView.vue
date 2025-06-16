@@ -1,56 +1,51 @@
 <script setup>
 
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { resetPassword } from '@/api/client'
 
 import AppHeaderWithGradient from '@/components/AppHeaderWithGradient.vue'
-
 import EyeClosed from '@/images/EyeClosed.png'
 import EyeOpened from '@/images/EyeOpened.png'
 
+const route = useRoute()
 const router = useRouter()
-const password = ref('')
+const code = ref('')
+const newPassword = ref('')
 const confirmPassword = ref('')
 const isSubmitting = ref(false)
-const isPasswordVisible = ref(false)
-const isConfirmPasswordVisible = ref(false)
+const errorMessage = ref('')
 
-const validatePassword = () => {
-  if (!password.value.trim()) {
-    alert('Пожалуйста, введите пароль')
+const email = ref(route.query.email || '')
+
+const validateForm = () => {
+  if (!code.value.trim()) {
+    errorMessage.value = 'Пожалуйста, введите код подтверждения'
     return false
   }
-  if (password.value.length < 6) {
-    alert('Пароль должен содержать минимум 6 символов')
+  if (newPassword.value.length < 6) {
+    errorMessage.value = 'Пароль должен быть не менее 6 символов'
     return false
   }
-  if (password.value !== confirmPassword.value) {
-    alert('Пароли не совпадают')
+  if (newPassword.value !== confirmPassword.value) {
+    errorMessage.value = 'Пароли не совпадают'
     return false
   }
   return true
-}
-
-const togglePasswordVisibility = () => {
-  isPasswordVisible.value = !isPasswordVisible.value
-}
-
-const toggleConfirmPasswordVisibility = () => {
-  isConfirmPasswordVisible.value = !isConfirmPasswordVisible.value
 }
 
 const handleSubmit = async () => {
   try {
     isSubmitting.value = true
     
-    if (!validatePassword()) return
+    if (!validateForm()) return
 
-    console.log('Новый пароль:', password.value)
+    await resetPassword(email.value, code.value, newPassword.value)
     router.push('/login')
     
   } catch (error) {
     console.error('Ошибка:', error)
-    alert(error.message || 'Произошла ошибка при смене пароля')
+    errorMessage.value = error.message || 'Произошла ошибка при сбросе пароля'
   } finally {
     isSubmitting.value = false
   }
@@ -119,6 +114,7 @@ const handleSubmit = async () => {
                 <button 
                   type="submit" 
                   class="next-btn"
+                  style="border: none"
                   :disabled="isSubmitting">
                   <span class="next-link">
                     {{ isSubmitting ? 'Сохранение...' : 'Сохранить пароль' }}
