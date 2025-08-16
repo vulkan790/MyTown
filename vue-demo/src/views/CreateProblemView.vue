@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuth } from '@/api/useAuth'
@@ -27,13 +27,61 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const addressSuggestions = ref([])
-const showSuggestions = ref(false)
-const showLoading = ref(false)
+const isAddressDropdownOpen = ref(false)
 const addressTouched = ref(false)
 
 const MAX_FILE_COUNT = 5
 const MAX_TOTAL_SIZE_MB = 20
 const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
+
+const formValid = computed(() => {
+  return (
+    form.value.title.trim().length >= 5 &&
+    form.value.addressUri &&
+    form.value.description.trim().length >= 10 &&
+    form.value.categoryId
+  )
+})
+
+const addressError = computed(() => {
+  return addressTouched.value && !form.value.addressUri
+    ? 'Выберите адрес из списка предложений'
+    : ''
+})
+
+const handleAddressInput = debounce(async (event) => {
+  const query = event.target.value.trim()
+  addressTouched.value = true
+  
+  if (!query || !isLoggedIn.value) {
+    addressSuggestions.value = []
+    isAddressDropdownOpen.value = false
+    return
+  }
+
+  try {
+    const suggestions = await getAddressSuggestions(query, token.value)
+    addressSuggestions.value = suggestions
+    isAddressDropdownOpen.value = suggestions.length > 0
+  } catch (error) {
+    console.error('Ошибка получения подсказок адреса:', error)
+    addressSuggestions.value = []
+    isAddressDropdownOpen.value = false
+    if (error.message === 'Authorization required') {
+      authStore.removeToken()
+      router.push('/login')
+    } else {
+      errorMessage.value = 'Ошибка при поиске адреса. Попробуйте позже.'
+    }
+  }
+}, 300)
+
+const selectAddress = (suggestion) => {
+  form.value.addressDisplay = suggestion.title
+  form.value.addressUri = suggestion.uri
+  isAddressDropdownOpen.value = false
+  errorMessage.value = ''
+}
 
 const handleFileUpload = (event) => {
   if (!isLoggedIn.value) {
@@ -96,7 +144,7 @@ const formatFileSize = (bytes) => {
 }
 
 const uploadFiles = async () => {
-  if (!isLoggedIn.value) {
+  if (!isLoggedIn.value || files.value.length === 0) {
     return []
   }
   
@@ -116,51 +164,6 @@ const uploadFiles = async () => {
   return imageIds
 }
 
-const fetchAddressSuggestions = debounce(async (query) => {
-  if (!query.trim() || !isLoggedIn.value) {
-    addressSuggestions.value = []
-    showSuggestions.value = false
-    showLoading.value = false
-    return
-  }
-  
-  showLoading.value = true
-  addressTouched.value = true
-  
-  try {
-    const suggestions = await getAddressSuggestions(query, token.value)
-    addressSuggestions.value = suggestions || []
-    showSuggestions.value = suggestions.length > 0
-  } catch (error) {
-    if (error.message === 'Authorization required') {
-      authStore.removeToken()
-      router.push('/login')
-    } else {
-      console.error('Ошибка получения подсказок:', error)
-      errorMessage.value = 'Ошибка получения подсказок адреса'
-    }
-    addressSuggestions.value = []
-    showSuggestions.value = false
-  } finally {
-    showLoading.value = false
-  }
-}, 300)
-
-const selectAddress = (suggestion) => {
-  form.value.addressDisplay = suggestion.title
-  form.value.addressUri = suggestion.uri
-  showSuggestions.value = false
-}
-
-const onClickOutside = (e) => {
-  if (!e.target.closest('.address-autocomplete')) {
-    showSuggestions.value = false
-  }
-}
-
-onMounted(() => document.addEventListener('click', onClickOutside))
-onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
-
 const handleSubmit = async () => {
   try {
     if (!isLoggedIn.value) {
@@ -175,6 +178,9 @@ const handleSubmit = async () => {
     if (!form.value.title.trim()) {
       throw new Error('Введите название проблемы')
     }
+    if (!form.value.categoryId) {
+      throw new Error('Выберите категорию проблемы')
+    }
     if (!form.value.addressUri) {
       addressTouched.value = true
       throw new Error('Выберите адрес из предложенных вариантов')
@@ -183,8 +189,8 @@ const handleSubmit = async () => {
       throw new Error('Введите описание проблемы')
     }
 
-    const imageIds = await uploadFiles()
-    
+    const imageIds = files.value.length > 0 ? await uploadFiles() : []
+
     const problemData = {
       title: form.value.title,
       description: form.value.description,
@@ -215,6 +221,30 @@ const handleSubmit = async () => {
     isSubmitting.value = false
   }
 }
+
+const handleClickOutside = (e) => {
+  const addressGroup = document.querySelector('.address-autocomplete')
+  if (addressGroup && !addressGroup.contains(e.target)) {
+    isAddressDropdownOpen.value = false
+  }
+}
+
+const clearMessages = () => {
+  errorMessage.value = ''
+  successMessage.value = ''
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  if (!token.value || !isLoggedIn.value) {
+    router.replace('/login')
+    return
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <template>
@@ -232,7 +262,8 @@ const handleSubmit = async () => {
             <input
               type="text"
               id="problem-title"
-              v-model="form.title"
+              v-model.trim="form.title"
+              @input="clearMessages"
               placeholder="Напишите название проблемы"
               required
               minlength="5"
@@ -246,28 +277,35 @@ const handleSubmit = async () => {
                 type="text"
                 id="problem-address"
                 v-model="form.addressDisplay"
-                @input="fetchAddressSuggestions($event.target.value)"
-                @focus="showLoading = true"
+                @input="handleAddressInput"
+                @focus="isAddressDropdownOpen = true"
+                @blur="addressTouched = true"
                 placeholder="Укажите место проблемы"
                 required
                 autocomplete="off">
+
+              <select 
+                v-if="isAddressDropdownOpen && addressSuggestions.length"
+                v-model="form.addressUri"
+                @change="selectAddress(addressSuggestions.find(s => s.uri === form.addressUri))"
+                class="form-select"
+                size="5"
+              >
+                <option 
+                  v-for="suggestion in addressSuggestions" 
+                  :key="suggestion.uri"
+                  :value="suggestion.uri"
+                >
+                  {{ suggestion.title }} - {{ suggestion.subtitle }}
+                </option>
+              </select>
               
-              <ul v-if="showSuggestions && addressSuggestions.length" class="suggestions-list">
-                <li
-                  v-for="(suggestion, index) in addressSuggestions"
-                  :key="index"
-                  @click="selectAddress(suggestion)"
-                  class="suggestion-item">
-                  <strong>{{ suggestion.title }}</strong>
-                  <br>
-                  <small>{{ suggestion.subtitle }}</small>
-                </li>
-              </ul>
-              
+              <div v-if="isAddressDropdownOpen && !addressSuggestions.length" class="no-suggestions">
+                Ничего не найдено
+              </div>
             </div>
-            <small v-if="addressTouched && !form.addressUri" class="error">
-              Выберите адрес из списка
-            </small>
+            <small v-if="addressError" class="error">{{ addressError }}</small>
+            <small v-else class="hint">Начните вводить адрес и выберите из списка</small>
           </div>
 
           <div class="file-upload-group">
@@ -308,7 +346,8 @@ const handleSubmit = async () => {
             <label for="problem-description">Подробное описание</label>
             <textarea
               id="problem-description"
-              v-model="form.description"
+              v-model.trim="form.description"
+              @input="clearMessages"
               rows="5"
               placeholder="Опишите проблему подробно"
               required
@@ -326,7 +365,7 @@ const handleSubmit = async () => {
           <button
             type="submit"
             class="submit-button"
-            :disabled="isSubmitting">
+            :disabled="isSubmitting || !formValid">
             {{ isSubmitting ? 'Отправка...' : 'Опубликовать' }}
           </button>
         </form>
