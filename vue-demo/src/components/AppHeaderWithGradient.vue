@@ -7,7 +7,7 @@ const { user, isPending, isLoggedIn } = storeToRefs(useUser())
 </script>
 
 <template>
-  <header class="header" style="background: linear-gradient(to left, #D3DEF2 20%, #3786BE 80%);">
+  <header class="header" style="background: #D3DEF2;">
     <div class="container">
       <div class="header__inner">
         <RouterLink :to="{ name: 'home' }" class="logo">

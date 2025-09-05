@@ -47,7 +47,7 @@ const handleSubmit = async () => {
 <template> 
   <AppHeaderWithGradient />
 
-  <main class="main" style="background: linear-gradient(to left, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
+  <main class="main" style="background: #D3DEF2; min-height: 100vh; display: flex; flex-direction: column;">
     <div class="container">
       <section class="reg-container">
         <div class="login-section-in">

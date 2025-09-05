@@ -148,37 +148,41 @@ const form = useForm({
 <template>
   <AppHeaderWithGradientReg />
 
-  <main class="main" style="background: linear-gradient(to right, #D3DEF2 20%, #3786BE 80%); min-height: 100vh; display: flex; flex-direction: column;">
+  <main class="main" style="background: #D3DEF2; min-height: 100vh; display: flex; flex-direction: column;">
     <div class="container">
       <section class="reg-container">
         <div v-if="showSuccessMessage" class="success-message-container">
           <div class="success-card">
-            <div class="success-icon">✓</div>
-            <h2 class="success-title">Регистрация почти завершена!</h2>
+            <div class="success-header">
+              <div class="success-icon">✓</div>
+              <h2 class="success-title">Регистрация почти завершена!</h2>
+            </div>
             <div class="success-content">
-              <p>Мы отправили письмо с подтверждением на:</p>
-              <p class="user-email">{{ form.getFieldValue('email') }}</p>
-              <p>Пожалуйста, проверьте вашу почту и перейдите по ссылке в письме, чтобы завершить регистрацию.</p>
+              <div class="email-notification">
+                <p class="notification-text">Мы отправили письмо с подтверждением на:</p>
+                <p class="user-email">{{ form.getFieldValue('email') }}</p>
+              </div>
+              <p class="instruction-text">Пожалуйста, проверьте вашу почту и перейдите по ссылке в письме, чтобы завершить регистрацию.</p>
               <div class="success-tips">
-                <p><strong>Не получили письмо?</strong></p>
-                <ul>
-                  <li>Проверьте папку "Спам"</li>
-                  <li>Убедитесь в правильности email</li>
-                  <li>Подождите несколько минут</li>
+                <h3 class="tips-title">Не получили письмо?</h3>
+                <ul class="tips-list">
+                  <li class="tip-item">Проверьте папку "Спам"</li>
+                  <li class="tip-item">Убедитесь в правильности email</li>
+                  <li class="tip-item">Подождите несколько минут</li>
                 </ul>
               </div>
             </div>
             <div class="success-actions">
-              <button @click="router.push('/')" class="btn-home">
+              <button @click="router.push('/')" class="btn btn-home">
                 На главную
               </button>
-              <router-link to="/login" class="btn-login">
+              <router-link to="/login" class="btn btn-login">
                 Войти
               </router-link>
             </div>
           </div>
         </div>
-        
+
         <div v-else class="process-reg">
           <form @submit.prevent.stop="form.handleSubmit">
             <form.Field name="lastName">

@@ -56,7 +56,7 @@ const votesText = computed(() => {
 </script>
 
 <template>
-  <div class="group" style="max-width: 1000px">
+  <div class="group" style="max-width: 800px">
     <div class="group__text">
       <h3 class="group__title">
         <RouterLink :to="{ name: 'problem', params: { id } }">{{ title || 'Без названия' }}</RouterLink>
