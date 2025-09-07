@@ -2,6 +2,8 @@
 import { defineProps, computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import ClassicAvatar from '@/images/user-png.png'
+import { useUser } from '@/api/useUser'
+import { moderateProblem } from '@/api/client'
 
 const props = defineProps({
   id: Number,
@@ -23,6 +25,8 @@ const props = defineProps({
     default: () => []
   }
 })
+
+const userStore = useUser()
 
 const statusNames = {
   'wait_for_solve': 'В ожидании решения',
@@ -48,10 +52,34 @@ const votesText = computed(() => {
   const lastDigit = count % 10
   const lastTwoDigits = count % 100
   
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) return `${count} голосов`
-  if (lastDigit === 1) return `${count} голос`
-  if (lastDigit >= 2 && lastDigit <= 4) return `${count} голоса`
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19)
+   return `${count} голосов`
+  if (lastDigit === 1)
+   return `${count} голос`
+  if (lastDigit >= 2 && lastDigit <= 4)
+   return `${count} голоса`
   return `${count} голосов`
+})
+
+const moderate = async (decision) => {
+  try 
+  {
+    await moderateProblem(props.id, decision, userStore.user?.token)
+    window.location.reload()
+  }
+  catch (error)
+  {
+    console.error('Ошибка модерации:', error)
+    alert('Ошибка при выполнении модерации')
+  }
+}
+
+const canModerate = computed(() => {
+  return userStore.isLoggedIn && ['admin', 'mod'].includes(userStore.user?.role)
+})
+
+const isOnModeration = computed(() => {
+  return props.status === 'on_moderation'
 })
 </script>
 
@@ -62,6 +90,12 @@ const votesText = computed(() => {
         <RouterLink :to="{ name: 'problem', params: { id } }">{{ title || 'Без названия' }}</RouterLink>
       </h3>
       <p class="description">{{ description || 'Описание отсутствует' }}</p>
+      
+      <div v-if="canModerate && isOnModeration" class="moderation-buttons">
+        <button @click="moderate('approve')" class="btn-approve">✓ Принять</button>
+        <button @click="moderate('reject')" class="btn-reject">✗ Отклонить</button>
+      </div>
+      
       <div class="group__statusbar">
         <div class="group__statusbar-user">
           <img 
@@ -86,3 +120,37 @@ const votesText = computed(() => {
     >
   </div>
 </template>
+
+<style scoped>
+.moderation-buttons {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.btn-approve {
+  padding: 8px 16px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-approve:hover {
+  background-color: #45a049;
+}
+
+.btn-reject {
+  padding: 8px 16px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-reject:hover {
+  background-color: #da190b;
+}
+</style>

@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { getProblemById } from '@/api/client'
+import { getProblemById, moderateProblem } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useUser } from '@/api/useUser'
@@ -14,7 +14,8 @@ const {
   data: problem,
   isPending,
   isError,
-  error
+  error,
+  refetch
 } = useQuery({
   queryKey: ['problem', problemId],
   queryFn: () => getProblemById(problemId.value, userStore.user?.token),
@@ -39,6 +40,28 @@ const formatDate = (dateString) => {
     minute: '2-digit'
   })
 }
+
+const moderate = async (decision) => {
+  try
+   {
+    await moderateProblem(problemId.value, decision, userStore.user?.token)
+    await refetch()
+    alert(decision === 'approve' ? 'Проблема одобрена' : 'Проблема отклонена')
+  } 
+  catch (error)
+   {
+    console.error('Ошибка модерации:', error)
+    alert('Ошибка при выполнении модерации: ' + error.message)
+  }
+}
+
+const canModerate = computed(() => {
+  return userStore.isLoggedIn && ['admin', 'mod'].includes(userStore.user?.role)
+})
+
+const isOnModeration = computed(() => {
+  return problem.value?.status === 'on_moderation'
+})
 </script>
 
 <template>
@@ -57,6 +80,11 @@ const formatDate = (dateString) => {
       <template v-else-if="problem">
         <section class="problem-detail">
           <h1 class="problem-title">{{ problem.title }}</h1>
+          
+          <div v-if="canModerate && isOnModeration" class="moderation-buttons">
+            <button @click="moderate('approve')" class="btn-approve">✓ Принять проблему</button>
+            <button @click="moderate('reject')" class="btn-reject">✗ Отклонить проблему</button>
+          </div>
           
           <div class="problem-meta">
             <div class="problem-author">
@@ -127,6 +155,40 @@ const formatDate = (dateString) => {
 </template>
 
 <style scoped>
+.moderation-buttons {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.btn-approve {
+  padding: 12px 24px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-approve:hover {
+  background-color: #45a049;
+}
+
+.btn-reject {
+  padding: 12px 24px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-reject:hover {
+  background-color: #da190b;
+}
+
 .problem-detail {
   max-width: 800px;
   margin: 0 auto;
@@ -228,8 +290,11 @@ const formatDate = (dateString) => {
 }
 
 .comment {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
+  background-color: #fff;
 }
 
 .comment-author {
@@ -248,25 +313,25 @@ const formatDate = (dateString) => {
 
 .comment-author-name {
   font-weight: 500;
-  color: #000;
+  color: #333;
 }
 
 .comment-content {
-  margin-bottom: 24px;
+  margin-bottom: 0.5rem;
   line-height: 1.5;
-  color: #000;
+  color: #444;
 }
 
 .comment-date {
-  font-size: 24px;
-  color: #000;
+  font-size: 0.8rem;
+  color: #666;
 }
 
 .loading, .error, .not-found, .no-comments {
   text-align: center;
   padding: 3rem;
-  font-size: 26px;
-  color: #000;
+  font-size: 1.1rem;
+  color: #666;
 }
 
 .error {
@@ -274,6 +339,6 @@ const formatDate = (dateString) => {
 }
 
 .not-found {
-  color: #000;
+  color: #757575;
 }
 </style>

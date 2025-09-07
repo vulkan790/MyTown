@@ -13,6 +13,8 @@ const { data: problems, isPending: isProblemsPending, isError: isProblemsError }
   refetchOnWindowFocus: false,
 })
 
+console.log('Hot problems data:', problems)
+
 const userStore = useUser()
 
 const shouldShowReportButton = computed(() => {

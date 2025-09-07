@@ -291,15 +291,39 @@ export const createProblem = async (problemData, token) => {
 /**
  * Moderate a problem.
  * @param {number} id
- * @param {'reject' | 'approve'} decision
+ * @param {'reject' | 'approve'} decision - строго по API
  * @param {string} token
  * @returns {Promise<void>}
  */
-export function moderateProblem(id, decision, token) {
-  return api.post(`problems/${id}/moderation`, {
-    headers: { Authorization: `Bearer ${token}` },
-    json: { decision },
-  }).json()
+export async function moderateProblem(id, decision, token) {
+  try 
+  {
+    const response = await api.post(`problems/${id}/moderation`, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      json: { decision },
+    });
+    if (response.status !== 204)
+      throw new Error('Ошибка модерации');
+    return;
+  } 
+  catch (error) 
+  {
+    if (error.response) 
+    {
+      if (error.response.status === 400)
+        throw new Error('Проблема уже была промодерирована');
+      if (error.response.status === 401)
+        throw new Error('Требуется авторизация');
+      if (error.response.status === 403)
+        throw new Error('Недостаточно прав');
+      if (error.response.status === 404)
+        throw new Error('Проблема не найдена');
+    }
+    throw new Error('Ошибка модерации');
+  }
 }
 
 /**

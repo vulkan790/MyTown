@@ -11,11 +11,12 @@ const page = ref(1)
 const limit = 12
 
 const getProblemType = computed(() => {
-  if (!userStore.user) return undefined
-  
-  if (['gov', 'admin', 'mod'].includes(userStore.user.role)) {
-    return null
-  }
+  if (!userStore.user)
+    return undefined
+  if (['admin', 'mod'].includes(userStore.user.role))
+    return 'moderation'
+  if (userStore.user.role === 'gov')
+    return 'pending'
   return undefined
 })
 
@@ -40,6 +41,24 @@ const {
   },
   refetchOnWindowFocus: false,
 })
+
+console.log('Problems data:', data)
+
+const pageTitle = computed(() => {
+  if (!userStore.user) 
+    return 'Список проблем'
+  
+  switch (userStore.user.role) 
+  {
+    case 'mod':
+    case 'admin':
+      return 'Проблемы на модерации'
+    case 'gov':
+      return 'Проблемы для решения'
+    default:
+      return 'Список проблем'
+  }
+})
 </script>
 
 <template>
@@ -48,27 +67,27 @@ const {
   <main class="main">
     <div class="container">
       <section class="all__problems">
-        <h1 class="all__problems-title">Список проблем</h1>
+        <h1 class="all__problems-title">{{ pageTitle }}</h1>
         
         <template v-if="isPending">
           <div class="loading">Загрузка проблем...</div>
         </template>
         
-        <template v-else-if="isError">
+        <template v-if="isError">
           <div class="error">Ошибка загрузки: {{ error.message }}</div>
         </template>
         
         <template v-else>
           <div class="problems-container">
             <ul class="all__problems-list">
-              <li v-for="problem in data.pages.flatMap((page) => page.problems)" 
+              <li v-for="problem in data?.pages?.flatMap((page) => page.problems)" 
                   :key="problem.id">
                 <ProblemCard v-bind="problem" />
               </li>
             </ul>
           </div>
           
-          <div class="load-more-container" style="text-align: center;">
+          <div v-if="data?.pages?.length" class="load-more-container" style="text-align: center;">
             <button 
               :disabled="!hasNextPage || isFetching" 
               @click="fetchNextPage" 
@@ -80,5 +99,4 @@ const {
       </section>
     </div>
   </main>
-
 </template>
