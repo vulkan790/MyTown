@@ -4,6 +4,7 @@ import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import fastifyEnv from '@fastify/env';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyCors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
 
 import { EnvironmentSchema } from './schema.js';
 import { setupDrizzle } from './db/index.js';
@@ -44,6 +45,13 @@ const registerCors = (fastify: FastifyInstance) => {
   });
 };
 
+const registerUploads = (fastify: FastifyInstance) => {
+  fastify.register(fastifyStatic, {
+    prefix: '/uploads/',
+    root: new URL('../uploads', import.meta.url),
+  });
+};
+
 const main = async () => {
   const fastify = Fastify({
     logger: {
@@ -59,6 +67,7 @@ const main = async () => {
 
   await registerEnv(fastify);
   registerMultipartFormData(fastify);
+  registerUploads(fastify);
   registerCors(fastify);
   registerDrizzle(fastify);
   registerJwt(fastify);
