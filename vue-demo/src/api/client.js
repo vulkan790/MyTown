@@ -4,6 +4,13 @@ export const api = ky.extend({
   prefixUrl: import.meta.env.VITE_API_URL,
 })
 
+export const PROBLEM_TYPES = {
+  MODERATION: 'moderation',
+  PENDING: 'pending',
+  SOLVING: 'solving',
+  ALL: undefined
+}
+
 /**
  * @typedef {'wait_for_solve' | 'solving' | 'solved' | 'rejected' | 'on_moderation'} Status
  * @typedef {'male' | 'female'} Gender
@@ -100,11 +107,12 @@ export const api = ky.extend({
  * Fetch a paginated list of problems.
  * @param {number} [page=1]
  * @param {number} [limit=12]
+ * @param {string} [type]
  * @returns {Promise<PaginatedResponse<Problem>>}
  */
 export function getProblems(page = 1, limit = 12, type) {
   const searchParams = { page, limit };
-  if (type !== undefined) {
+  if (type !== undefined && type !== null) {
     searchParams.type = type;
   }
   return api.get('problems', { searchParams }).json();
@@ -199,6 +207,7 @@ export function getCurrentUser(token) {
     headers: { Authorization: `Bearer ${token}` },
   }).json()
 }
+
 /**
  * Fetch address suggestions.
  * @param {string} address
@@ -219,33 +228,30 @@ export function getAddressSuggestions(address, token) {
  * @returns {Promise<UploadImageResponse>}
  */
 export const uploadProblemImage = async (formData, token) => {
-  try {
+  try 
+  {
     const response = await api.post('problems/images', {
       headers: { 
         Authorization: `Bearer ${token}`,
       },
       body: formData
     });
-
     const data = await response.json();
     console.log('Upload response:', data);
     return data;
-    
-  } catch (error) {
-    if (error.response) {
+  } 
+  catch (error) 
+  {
+    if (error.response) 
+    {
       const errorData = await error.response.json();
-      
-      if (error.response.status === 400) {
+      if (error.response.status === 400)
         throw new Error(errorData.error || 'Invalid file format');
-      }
-      if (error.response.status === 401) {
+      if (error.response.status === 401)
         throw new Error('Authorization required');
-      }
-      if (error.response.status === 500) {
+      if (error.response.status === 500)
         throw new Error(`Server error: ${errorData.detail || 'Check server logs'}`);
-      }
     }
-    
     console.error('Full upload error:', error);
     throw new Error('File upload failed. Please try smaller files.');
   }
@@ -262,7 +268,8 @@ export const uploadProblemImage = async (formData, token) => {
  * @returns {Promise<CreateProblemResponse>}
  */
 export const createProblem = async (problemData, token) => {
-  try {
+  try 
+  {
     const response = await api.post('problems', {
       headers: { 
         Authorization: `Bearer ${token}`,
@@ -270,19 +277,18 @@ export const createProblem = async (problemData, token) => {
       },
       json: problemData
     });
-    
     return response.json();
-  } catch (error) {
-    if (error.response) {
+  } 
+  catch (error) 
+  {
+    if (error.response) 
+    {
       const errorData = await error.response.json();
       console.error('Create problem error details:', errorData);
-      
-      if (error.response.status === 400) {
+      if (error.response.status === 400)
         throw new Error(errorData.error || JSON.stringify(errorData.errors));
-      }
-      if (error.response.status === 401) {
+      if (error.response.status === 401)
         throw new Error('Authorization required');
-      }
     }
     throw error;
   }
@@ -305,6 +311,7 @@ export async function moderateProblem(id, decision, token) {
       },
       json: { decision },
     });
+    
     if (response.status !== 204)
       throw new Error('Ошибка модерации');
     return;
@@ -313,8 +320,9 @@ export async function moderateProblem(id, decision, token) {
   {
     if (error.response) 
     {
+      const errorData = await error.response.json();
       if (error.response.status === 400)
-        throw new Error('Проблема уже была промодерирована');
+        throw new Error(errorData.error || 'Проблема уже была промодерирована');
       if (error.response.status === 401)
         throw new Error('Требуется авторизация');
       if (error.response.status === 403)
@@ -322,7 +330,7 @@ export async function moderateProblem(id, decision, token) {
       if (error.response.status === 404)
         throw new Error('Проблема не найдена');
     }
-    throw new Error('Ошибка модерации');
+    throw new Error('Ошибка модерации: ' + error.message);
   }
 }
 

@@ -62,15 +62,12 @@ const votesText = computed(() => {
 })
 
 const moderate = async (decision) => {
-  try 
-  {
+  try {
     await moderateProblem(props.id, decision, userStore.user?.token)
     window.location.reload()
-  }
-  catch (error)
-  {
+  } catch (error) {
     console.error('Ошибка модерации:', error)
-    alert('Ошибка при выполнении модерации')
+    alert('Ошибка при выполнении модерации: ' + error.message)
   }
 }
 
@@ -101,8 +98,7 @@ const isOnModeration = computed(() => {
           <img 
             :src="author?.avatarUrl || ClassicAvatar" 
             alt="user" 
-            class="group__statusbar-user-logo"
-          >
+            class="group__statusbar-user-logo">
           <span class="group__statusbar-user-name">{{ author?.firstName || 'Аноним' }}</span>
         </div>
         <ul class="group__statusbar-status">

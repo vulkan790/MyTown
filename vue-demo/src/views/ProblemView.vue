@@ -42,14 +42,11 @@ const formatDate = (dateString) => {
 }
 
 const moderate = async (decision) => {
-  try
-   {
+  try {
     await moderateProblem(problemId.value, decision, userStore.user?.token)
     await refetch()
     alert(decision === 'approve' ? 'Проблема одобрена' : 'Проблема отклонена')
-  } 
-  catch (error)
-   {
+  } catch (error) {
     console.error('Ошибка модерации:', error)
     alert('Ошибка при выполнении модерации: ' + error.message)
   }
@@ -91,8 +88,7 @@ const isOnModeration = computed(() => {
               <img 
                 :src="problem.author?.avatarUrl || '/src/images/user-png.png'" 
                 alt="Автор" 
-                class="author-avatar"
-              >
+                class="author-avatar">
               <span class="author-name">{{ problem.author?.firstName || 'Аноним' }}</span>
             </div>
             <div class="problem-status">{{ statusNames[problem.status] || problem.status }}</div>
@@ -109,8 +105,7 @@ const isOnModeration = computed(() => {
                 :key="index" 
                 :src="image" 
                 :alt="'Изображение ' + (index + 1)" 
-                class="problem-image"
-              >
+                class="problem-image">
             </div>
             
             <div class="problem-address" v-if="problem.address">
@@ -127,8 +122,7 @@ const isOnModeration = computed(() => {
                   <img 
                     :src="comment.author.avatarUrl || '/src/images/user-png.png'" 
                     alt="Автор комментария" 
-                    class="comment-avatar"
-                  >
+                    class="comment-avatar">
                   <span class="comment-author-name">
                     {{ comment.author.firstName }} 
                     {{ comment.author.lastName || '' }}

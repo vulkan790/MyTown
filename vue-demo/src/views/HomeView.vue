@@ -38,8 +38,7 @@ const shouldShowReportButton = computed(() => {
             <RouterLink 
               v-if="shouldShowReportButton" 
               to="/report" 
-              class="first__button"
-            >
+              class="first__button">
               Cообщить о проблеме
             </RouterLink>
           </div>

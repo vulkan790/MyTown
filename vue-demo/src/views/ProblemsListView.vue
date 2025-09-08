@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useInfiniteQuery } from '@tanstack/vue-query'
-import { getProblems } from '@/api/client'
+import { getProblems, PROBLEM_TYPES } from '@/api/client'
 import { useUser } from '@/api/useUser'
 import ProblemCard from '@/components/ProblemCard.vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -9,14 +9,34 @@ import AppHeader from '@/components/AppHeader.vue'
 const userStore = useUser()
 const page = ref(1)
 const limit = 12
+const selectedProblemType = ref(null)
+
+const availableProblemTypes = computed(() => {
+  if (!userStore.user)
+   return []
+  
+  const types = [
+    { value: null, label: 'Все проблемы' }
+  ]
+  
+  if (['admin', 'mod'].includes(userStore.user.role))
+    types.push( { value: PROBLEM_TYPES.MODERATION, label: 'На модерации' } )
+  
+  if (userStore.user.role === 'gov')
+    types.push( { value: PROBLEM_TYPES.PENDING, label: 'Ожидающие решения' }, { value: PROBLEM_TYPES.SOLVING, label: 'В процессе решения' } )
+  
+  return types
+})
 
 const getProblemType = computed(() => {
   if (!userStore.user)
-    return undefined
+   return undefined
+  if (selectedProblemType.value !== null)
+    return selectedProblemType.value
   if (['admin', 'mod'].includes(userStore.user.role))
-    return 'moderation'
+    return PROBLEM_TYPES.MODERATION
   if (userStore.user.role === 'gov')
-    return 'pending'
+    return PROBLEM_TYPES.PENDING
   return undefined
 })
 
@@ -27,7 +47,8 @@ const {
   fetchNextPage,
   hasNextPage,
   isError,
-  error
+  error,
+  refetch
 } = useInfiniteQuery({
   queryKey: ['problems', getProblemType],
   queryFn: ({ pageParam = 1 }) => 
@@ -42,13 +63,18 @@ const {
   refetchOnWindowFocus: false,
 })
 
-console.log('Problems data:', data)
+const handleProblemTypeChange = (type) => {
+  selectedProblemType.value = type
+  refetch()
+}
 
 const pageTitle = computed(() => {
-  if (!userStore.user) 
-    return 'Список проблем'
-  
-  switch (userStore.user.role) 
+  if (!userStore.user)
+   return 'Список проблем'
+  const selectedType = availableProblemTypes.value.find(type => type.value === selectedProblemType.value)
+  if (selectedType && selectedType.value !== null)
+    return selectedType.label
+  switch (userStore.user.role)
   {
     case 'mod':
     case 'admin':
@@ -67,7 +93,23 @@ const pageTitle = computed(() => {
   <main class="main">
     <div class="container">
       <section class="all__problems">
-        <h1 class="all__problems-title">{{ pageTitle }}</h1>
+        <div class="problems-header">
+          <h1 class="all__problems-title">{{ pageTitle }}</h1>
+          
+          <div v-if="availableProblemTypes.length > 1" class="problem-type-selector">
+            <select 
+              v-model="selectedProblemType" 
+              @change="handleProblemTypeChange(selectedProblemType)"
+              class="type-select">
+              <option 
+                v-for="type in availableProblemTypes" 
+                :key="type.value" 
+                :value="type.value">
+                {{ type.label }}
+              </option>
+            </select>
+          </div>
+        </div>
         
         <template v-if="isPending">
           <div class="loading">Загрузка проблем...</div>
@@ -100,3 +142,69 @@ const pageTitle = computed(() => {
     </div>
   </main>
 </template>
+
+<style scoped>
+.problems-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.problem-type-selector {
+  display: flex;
+  align-items: center;
+}
+
+.type-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: white;
+  font-size: 1rem;
+}
+
+.type-select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: #dc3545;
+}
+
+.load-more-btn {
+  padding: 0.75rem 2rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.load-more-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.all__problems-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1.5rem;
+}
+</style>
