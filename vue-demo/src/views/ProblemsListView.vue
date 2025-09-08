@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useInfiniteQuery } from '@tanstack/vue-query'
 import { getProblems, PROBLEM_TYPES } from '@/api/client'
 import { useUser } from '@/api/useUser'
@@ -63,6 +63,17 @@ const {
   refetchOnWindowFocus: false,
 })
 
+watch(data, (newData) => {
+  console.log('Problems data:', newData)
+  if (newData) {
+    console.log('Pages:', newData.pages)
+    newData.pages.forEach((page, index) => {
+      console.log(`Page ${index}:`, page)
+      console.log(`Problems on page ${index}:`, page.problems)
+    })
+  }
+})
+
 const handleProblemTypeChange = (type) => {
   selectedProblemType.value = type
   refetch()
@@ -84,6 +95,15 @@ const pageTitle = computed(() => {
     default:
       return 'Список проблем'
   }
+})
+
+const allProblems = computed(() => {
+  if (!data.value || !data.value.pages) return []
+  return data.value.pages.flatMap(page => page.problems || [])
+})
+
+const hasProblems = computed(() => {
+  return allProblems.value.length > 0
 })
 </script>
 
@@ -115,27 +135,33 @@ const pageTitle = computed(() => {
           <div class="loading">Загрузка проблем...</div>
         </template>
         
-        <template v-if="isError">
+        <template v-else-if="isError">
           <div class="error">Ошибка загрузки: {{ error.message }}</div>
         </template>
         
-        <template v-else>
+        <template v-else-if="hasProblems">
           <div class="problems-container">
             <ul class="all__problems-list">
-              <li v-for="problem in data?.pages?.flatMap((page) => page.problems)" 
+              <li v-for="problem in allProblems" 
                   :key="problem.id">
                 <ProblemCard v-bind="problem" />
               </li>
             </ul>
           </div>
           
-          <div v-if="data?.pages?.length" class="load-more-container" style="text-align: center;">
+          <div class="load-more-container" style="text-align: center;">
             <button 
               :disabled="!hasNextPage || isFetching" 
               @click="fetchNextPage" 
               class="load-more-btn">
               {{ isFetching ? 'Загрузка...' : 'Загрузить еще' }}
             </button>
+          </div>
+        </template>
+        
+        <template v-else>
+          <div class="no-problems">
+            Проблем не найдено
           </div>
         </template>
       </section>
@@ -171,7 +197,7 @@ const pageTitle = computed(() => {
   border-color: #007bff;
 }
 
-.loading, .error {
+.loading, .error, .no-problems {
   text-align: center;
   padding: 2rem;
   font-size: 1.1rem;
@@ -179,6 +205,10 @@ const pageTitle = computed(() => {
 
 .error {
   color: #dc3545;
+}
+
+.no-problems {
+  color: #666;
 }
 
 .load-more-btn {
@@ -189,6 +219,7 @@ const pageTitle = computed(() => {
   border-radius: 6px;
   cursor: pointer;
   font-size: 1rem;
+  margin-top: 2rem;
 }
 
 .load-more-btn:disabled {
