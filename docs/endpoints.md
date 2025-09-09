@@ -254,7 +254,7 @@ query (всё, что идет после вопроса в конце URL), pat
 **Headers**
 ```json
 {
-  "Authorization": "Bearer jwt-token"
+  "authorization": "Bearer jwt-token"
 }
 ```
 
