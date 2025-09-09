@@ -21,6 +21,13 @@ query (всё, что идет после вопроса в конце URL), pat
 
 ### Request
 
+**Headers**
+```json
+{
+  "authorization": "Bearer jwt-token" // опционально; требуется для query.type
+}
+```
+
 **Query**
 ```json
 {
@@ -247,7 +254,7 @@ query (всё, что идет после вопроса в конце URL), pat
 **Headers**
 ```json
 {
-  "Authorization": "Bearer jwt-token"
+  "authorization": "Bearer jwt-token"
 }
 ```
 
