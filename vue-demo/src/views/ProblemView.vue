@@ -82,7 +82,8 @@ const handleVote = (vote) => {
     alert('Для голосования необходимо авторизоваться')
     return
   }
-  voteMutation.mutate(vote)
+  const newVote = userVote.value === vote ? 0 : vote
+  voteMutation.mutate(newVote)
 }
 
 const handleAddComment = () => {
@@ -125,12 +126,16 @@ const userVote = computed(() => {
   return problem.value?.vote || 0
 })
 
-const positiveVotes = computed(() => {
-  return problem.value?.votes > 0 ? problem.value.votes : 0
+const totalVotes = computed(() => {
+  return problem.value?.votes || 0
 })
 
-const negativeVotes = computed(() => {
-  return problem.value?.votes < 0 ? Math.abs(problem.value.votes) : 0
+const isYesActive = computed(() => {
+  return userVote.value === 1
+})
+
+const isNoActive = computed(() => {
+  return userVote.value === -1
 })
 </script>
 
@@ -182,30 +187,28 @@ const negativeVotes = computed(() => {
               <template v-if="canVote">
                 <h3 class="question-problem">Стоит ли решать данную проблему?</h3>
                 <div class="problem__status">
-                  <div class="status-number">{{ positiveVotes }}</div>
-                  <button 
-                    @click="handleVote(1)" 
-                    :class="['btn-answer', { active: userVote === 1 }]"
-                    :disabled="voteMutation.isPending">
-                    {{ 'Да' }}
-                  </button>
-                  <div class="status-number">{{ negativeVotes }}</div>
-                  <button 
-                    @click="handleVote(-1)" 
-                    :class="['btn-answer', { active: userVote === -1 }]"
-                    :disabled="voteMutation.isPending">
-                    {{ 'Нет' }}
-                  </button>
+                  <div class="votes-counter">
+                    <span class="votes-label">Голосов:</span>
+                    <span class="votes-number" :class="{ positive: totalVotes > 0, negative: totalVotes < 0 }">
+                      {{ totalVotes }}
+                    </span>
+                  </div>
+                  <div class="vote-buttons">
+                    <button 
+                      @click="handleVote(1)" 
+                      :class="['btn-answer', { active: isYesActive }]"
+                      :disabled="voteMutation.isPending">
+                      {{ 'Да' }}
+                    </button>
+                    <button 
+                      @click="handleVote(-1)" 
+                      :class="['btn-answer', { active: isNoActive }]"
+                      :disabled="voteMutation.isPending">
+                      {{ 'Нет' }}
+                    </button>
+                  </div>
                 </div>
               </template>
-
-              <div v-if="canModerate && isOnModeration" class="moderation-block">
-                <h3 class="question-problem">Модерация проблемы</h3>
-                <div class="problem__status">
-                  <button @click="moderate('approve')" class="btn-moderate approve">✓ Одобрить проблему</button>
-                  <button @click="moderate('reject')" class="btn-moderate reject">✗ Отклонить проблему</button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -225,7 +228,7 @@ const negativeVotes = computed(() => {
                   </div>
                 </div>
                 <p class="comment-text">{{ comment.content }}</p>
-              </div>
+                </div>
             </div>
 
             <div v-if="canComment" class="mynic-comment-box">
@@ -319,39 +322,78 @@ const negativeVotes = computed(() => {
   font-weight: normal;
   margin: 0;
   font-size: 1.1rem;
-  color: #333;
+  color: #000;
 }
 
 .title-address {
   margin-top: 0;
   margin-bottom: 10px;
-  color: #333;
+  color: #000;
 }
 
 .text-address {
   margin-top: 0;
   margin-bottom: 20px;
   line-height: 1.5;
-  color: #555;
+  color: #000;
 }
 
 .question-problem {
-  display: flex;
-  align-items: center;
+  text-align: center;
   justify-content: center;
+  display: flex;
   margin-top: 25px;
   margin-bottom: 15px;
-  margin-left: -25px;
-  color: #333;
+  margin-left: -5px;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .problem__status {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 15px;
   margin: 20px 0;
-  flex-wrap: wrap;
+}
+
+.votes-counter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  justify-content: center;
+}
+
+.votes-label {
+  font-weight: 500;
+  color: #000;
+}
+
+.votes-number {
+  font-weight: bold;
+  padding: 5px 12px;
+  background-color: #f0f0f0;
+  min-width: 50px;
+  text-align: center;
+}
+
+.votes-number.positive {
+  color: #4CAF50;
+  background-color: #f0f9f0;
+}
+
+.votes-number.negative {
+  color: #f44336;
+  background-color: #fef0f0;
+}
+
+.vote-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 
 .btn-answer {
@@ -360,39 +402,26 @@ const negativeVotes = computed(() => {
   width: 100px;
   background-color: #2c6c9a;
   color: white;
+  border: none;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .btn-answer:hover {
   background-color: #1d4e6f;
-  border-color: #1d4e6f;
 }
 
 .btn-answer.active {
   background-color: #4CAF50;
-  border-color: #4CAF50;
 }
 
 .btn-answer.active:last-of-type {
   background-color: #f44336;
-  border-color: #f44336;
 }
 
 .btn-answer:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.status-number {
-  font-weight: bold;
-  font-size: 16px;
-  width: 50px;
-  height: 50px;
-  text-align: center;
-  color: #fff;
-  padding: 5px;
-  background-color: #3786BE;
 }
 
 .btn-moderate {
@@ -433,7 +462,7 @@ const negativeVotes = computed(() => {
 
 .main-text-mynic {
   margin-bottom: 20px;
-  color: #333;
+  color: #000;
   text-align: center;
 }
 
@@ -454,18 +483,18 @@ const negativeVotes = computed(() => {
 
 .comment-author {
   font-weight: 500;
-  color: #333;
+  color: #000;
 }
 
 .comment-time {
   font-size: 12px;
-  color: #888;
+  color: #000;
 }
 
 .comment-text {
   margin: 0;
   line-height: 1.5;
-  color: #555;
+  color: #000;
 }
 
 .mynic-comment-box {

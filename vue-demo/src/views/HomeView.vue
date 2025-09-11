@@ -52,7 +52,7 @@ const shouldShowReportButton = computed(() => {
           <template v-else-if="isProblemsError">Ошибка загрузки данных</template>
           <template v-else>
             <div v-for="problem in problems" :key="problem.id" class="abc" style="display: flex; justify-content: center; align-items: center;">
-              <ProblemCard v-bind="problem" />
+              <ProblemCard v-bind="problem" class="wide-card" />
             </div>
             <RouterLink to="/problems/all" class="second__btn-txt">Показать все проблемы</RouterLink>
           </template>
@@ -60,3 +60,15 @@ const shouldShowReportButton = computed(() => {
       </div>
   </main>
 </template>
+
+<style>
+.abc {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.wide-card {
+  max-width: 90vw !important;
+  min-width: 300px !important;
+}
+</style>
