@@ -63,7 +63,7 @@ const votesText = computed(() => {
 
 const moderate = async (decision) => {
   try {
-    await moderateProblem(props.id, decision, userStore.user?.token)
+    await moderateProblem(props.id, decision)
     window.location.reload()
   } catch (error) {
     console.error('Ошибка модерации:', error)

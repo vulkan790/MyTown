@@ -15,7 +15,7 @@ export const useUser = defineStore('user', () => {
     error
   } = useQuery({
     queryKey: ['user', auth.token],
-    queryFn: () => auth.token ? getCurrentUser(auth.token) : null,
+    queryFn: () => auth.token ? getCurrentUser() : null,
     retry: false,
     refetchOnWindowFocus: true,
   })

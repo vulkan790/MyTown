@@ -2,6 +2,16 @@ import ky from 'ky'
 
 export const api = ky.extend({
   prefixUrl: import.meta.env.VITE_API_URL,
+  hooks: {
+    beforeRequest: [
+      (request) => {
+        const token = localStorage.getItem('access-token');
+        if (token) {
+          request.headers.set('Authorization', `Bearer ${token}`);
+        }
+      }
+    ]
+  }
 })
 
 export const PROBLEM_TYPES = {
@@ -121,13 +131,10 @@ export function getProblems(page = 1, limit = 12, type) {
 /**
  * Fetch a problem by its ID.
  * @param {number} id
- * @param {string} [token]
  * @returns {Promise<Problem & { comments: Comment[] }>}
  */
-export function getProblemById(id, token) {
-  return api.get(`problems/${id}`, {
-    headers: { Authorization: token ? `Bearer ${token}` : undefined },
-  }).json()
+export function getProblemById(id) {
+  return api.get(`problems/${id}`).json()
 }
 
 /**
@@ -199,24 +206,19 @@ export function resetPassword(email, code, newPassword) {
 
 /**
  * Fetch the current user's details.
- * @param {string} token
  * @returns {Promise<CurrentUserResponse>}
  */
-export function getCurrentUser(token) {
-  return api.get('users/me', { 
-    headers: { Authorization: `Bearer ${token}` },
-  }).json()
+export function getCurrentUser() {
+  return api.get('users/me').json()
 }
 
 /**
  * Fetch address suggestions.
  * @param {string} address
- * @param {string} token
  * @returns {Promise<AddressSuggestion[]>}
  */
-export function getAddressSuggestions(address, token) {
-  return api.get('problems/address-suggest', { 
-    headers: { Authorization: `Bearer ${token}` },
+export function getAddressSuggestions(address) {
+  return api.get('problems/address-suggest', {
     searchParams: { address },
   }).json()
 }
@@ -224,26 +226,18 @@ export function getAddressSuggestions(address, token) {
 /**
  * Upload an image for a problem.
  * @param {FormData} formData
- * @param {string} token
  * @returns {Promise<UploadImageResponse>}
  */
-export const uploadProblemImage = async (formData, token) => {
-  try 
-  {
+export const uploadProblemImage = async (formData) => {
+  try {
     const response = await api.post('problems/images', {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-      },
       body: formData
     });
     const data = await response.json();
     console.log('Upload response:', data);
     return data;
-  } 
-  catch (error) 
-  {
-    if (error.response) 
-    {
+  } catch (error) {
+    if (error.response) {
       const errorData = await error.response.json();
       if (error.response.status === 400)
         throw new Error(errorData.error || 'Invalid file format');
@@ -264,25 +258,16 @@ export const uploadProblemImage = async (formData, token) => {
  * @param {string} problemData.description
  * @param {string} problemData.address
  * @param {number[]} problemData.images
- * @param {string} token
  * @returns {Promise<CreateProblemResponse>}
  */
-export const createProblem = async (problemData, token) => {
-  try 
-  {
+export const createProblem = async (problemData) => {
+  try {
     const response = await api.post('problems', {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
       json: problemData
     });
     return response.json();
-  } 
-  catch (error) 
-  {
-    if (error.response) 
-    {
+  } catch (error) {
+    if (error.response) {
       const errorData = await error.response.json();
       console.error('Create problem error details:', errorData);
       if (error.response.status === 400)
@@ -298,28 +283,19 @@ export const createProblem = async (problemData, token) => {
  * Moderate a problem.
  * @param {number} id
  * @param {'reject' | 'approve'} decision - строго по API
- * @param {string} token
  * @returns {Promise<void>}
  */
-export async function moderateProblem(id, decision, token) {
-  try 
-  {
+export async function moderateProblem(id, decision) {
+  try {
     const response = await api.post(`problems/${id}/moderation`, {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
       json: { decision },
     });
     
     if (response.status !== 204)
       throw new Error('Ошибка модерации');
     return;
-  } 
-  catch (error) 
-  {
-    if (error.response) 
-    {
+  } catch (error) {
+    if (error.response) {
       const errorData = await error.response.json();
       if (error.response.status === 400)
         throw new Error(errorData.error || 'Проблема уже была промодерирована');
@@ -338,12 +314,10 @@ export async function moderateProblem(id, decision, token) {
  * Update the status of a problem.
  * @param {number} id
  * @param {'claim' | 'resolve'} action
- * @param {string} token
  * @returns {Promise<void>}
  */
-export function updateProblemStatus(id, action, token) {
+export function updateProblemStatus(id, action) {
   return api.post(`problems/${id}/town`, {
-    headers: { Authorization: `Bearer ${token}` },
     json: { action },
   }).json()
 }
@@ -352,15 +326,10 @@ export function updateProblemStatus(id, action, token) {
  * Add a comment to a problem.
  * @param {number} id
  * @param {string} content
- * @param {string} token
  * @returns {Promise<AddCommentResponse>}
  */
-export const addCommentToProblem = async (problemId, content, token) => {
+export const addCommentToProblem = async (problemId, content) => {
   return api.post(`problems/${problemId}/comments`, {
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
     json: { content }
   }).json()
 }
@@ -369,15 +338,10 @@ export const addCommentToProblem = async (problemId, content, token) => {
  * Vote for a problem.
  * @param {number} id
  * @param {number} vote - -1, 0, or 1
- * @param {string} token
  * @returns {Promise<void>}
  */
-export function addVoteToProblem(id, vote, token) {
+export function addVoteToProblem(id, vote) {
   return api.post(`problems/${id}/vote`, {
-    headers: { 
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
     json: { vote }
   })
 }

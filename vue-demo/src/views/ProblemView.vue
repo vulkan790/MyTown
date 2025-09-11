@@ -1,14 +1,16 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { getProblemById, moderateProblem } from '@/api/client'
+import { useRoute, RouterLink } from 'vue-router'
+import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, useMutation } from '@tanstack/vue-query'
 import { useUser } from '@/api/useUser'
 
 const route = useRoute()
 const userStore = useUser()
 const problemId = ref(route.params.id)
+const voteValue = ref(0)
+const newComment = ref('')
 
 const {
   data: problem,
@@ -18,8 +20,29 @@ const {
   refetch
 } = useQuery({
   queryKey: ['problem', problemId],
-  queryFn: () => getProblemById(problemId.value, userStore.user?.token),
+  queryFn: () => getProblemById(problemId.value),
   enabled: !!problemId.value
+})
+
+const voteMutation = useMutation({
+  mutationFn: (vote) => addVoteToProblem(problemId.value, vote),
+  onSuccess: () => {
+    refetch()
+  },
+  onError: (error) => {
+    alert('Ошибка при голосовании: ' + error.message)
+  }
+})
+
+const commentMutation = useMutation({
+  mutationFn: () => addCommentToProblem(problemId.value, newComment.value),
+  onSuccess: () => {
+    newComment.value = ''
+    refetch()
+  },
+  onError: (error) => {
+    alert('Ошибка при добавлении комментария: ' + error.message)
+  }
 })
 
 const statusNames = {
@@ -32,10 +55,12 @@ const statusNames = {
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('ru-RU', {
-    month: 'long',
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ru-RU', {
     day: '2-digit',
-    year: 'numeric',
+    month: '2-digit',
+    year: 'numeric'
+  }) + ' ' + date.toLocaleTimeString('ru-RU', {
     hour: '2-digit',
     minute: '2-digit'
   })
@@ -43,7 +68,7 @@ const formatDate = (dateString) => {
 
 const moderate = async (decision) => {
   try {
-    await moderateProblem(problemId.value, decision, userStore.user?.token)
+    await moderateProblem(problemId.value, decision)
     await refetch()
     alert(decision === 'approve' ? 'Проблема одобрена' : 'Проблема отклонена')
   } catch (error) {
@@ -52,19 +77,67 @@ const moderate = async (decision) => {
   }
 }
 
+const handleVote = (vote) => {
+  if (!userStore.isLoggedIn) {
+    alert('Для голосования необходимо авторизоваться')
+    return
+  }
+  voteMutation.mutate(vote)
+}
+
+const handleAddComment = () => {
+  if (!userStore.isLoggedIn) {
+    alert('Для добавления комментария необходимо авторизоваться')
+    return
+  }
+  if (!newComment.value.trim()) {
+    alert('Комментарий не может быть пустым')
+    return
+  }
+  commentMutation.mutate()
+}
+
 const canModerate = computed(() => {
   return userStore.isLoggedIn && ['admin', 'mod'].includes(userStore.user?.role)
 })
 
+const isGovUser = computed(() => {
+  return userStore.isLoggedIn && userStore.user?.role === 'gov'
+})
+
+const isRegularUser = computed(() => {
+  return userStore.isLoggedIn && userStore.user?.role === 'user'
+})
+
+const canVote = computed(() => {
+  return isRegularUser.value || isGovUser.value
+})
+
+const canComment = computed(() => {
+  return userStore.isLoggedIn && ['admin', 'mod', 'gov'].includes(userStore.user?.role)
+})
+
 const isOnModeration = computed(() => {
   return problem.value?.status === 'on_moderation'
+})
+
+const userVote = computed(() => {
+  return problem.value?.vote || 0
+})
+
+const positiveVotes = computed(() => {
+  return problem.value?.votes > 0 ? problem.value.votes : 0
+})
+
+const negativeVotes = computed(() => {
+  return problem.value?.votes < 0 ? Math.abs(problem.value.votes) : 0
 })
 </script>
 
 <template>
   <AppHeader />
 
-  <main class="main">
+  <main class="main-problem">
     <div class="container">
       <template v-if="isPending">
         <div class="loading">Загрузка проблемы...</div>
@@ -75,70 +148,112 @@ const isOnModeration = computed(() => {
       </template>
       
       <template v-else-if="problem">
-        <section class="problem-detail">
-          <h1 class="problem-title">{{ problem.title }}</h1>
-          
-          <div v-if="canModerate && isOnModeration" class="moderation-buttons">
-            <button @click="moderate('approve')" class="btn-approve">✓ Принять проблему</button>
-            <button @click="moderate('reject')" class="btn-reject">✗ Отклонить проблему</button>
-          </div>
-          
-          <div class="problem-meta">
-            <div class="problem-author">
-              <img 
-                :src="problem.author?.avatarUrl || '/src/images/user-png.png'" 
-                alt="Автор" 
-                class="author-avatar">
-              <span class="author-name">{{ problem.author?.firstName || 'Аноним' }}</span>
-            </div>
-            <div class="problem-status">{{ statusNames[problem.status] || problem.status }}</div>
-            <div class="problem-date">{{ formatDate(problem.createdAt) }}</div>
-            <div class="problem-votes">Голосов: {{ problem.votes }}</div>
-          </div>
-          
-          <div class="problem-content">
-            <p class="problem-description">{{ problem.description }}</p>
-            
-            <div v-if="problem.images && problem.images.length" class="problem-images">
-              <img 
-                v-for="(image, index) in problem.images" 
-                :key="index" 
-                :src="image" 
-                :alt="'Изображение ' + (index + 1)" 
-                class="problem-image">
-            </div>
-            
-            <div class="problem-address" v-if="problem.address">
-              <strong>Адрес:</strong> {{ problem.address }}
-            </div>
-          </div>
-          
-          <div class="problem-comments" v-if="problem.comments">
-            <h3>Комментарии ({{ problem.comments.length }})</h3>
-            
-            <div v-if="problem.comments.length" class="comments-list">
-              <div v-for="comment in problem.comments" :key="comment.id" class="comment">
-                <div class="comment-author">
-                  <img 
-                    :src="comment.author.avatarUrl || '/src/images/user-png.png'" 
-                    alt="Автор комментария" 
-                    class="comment-avatar">
-                  <span class="comment-author-name">
-                    {{ comment.author.firstName }} 
-                    {{ comment.author.lastName || '' }}
-                    {{ comment.author.middleName || '' }}
-                  </span>
+        <div class="problem-page">
+          <div class="problem-layout">
+            <div class="left-column">
+              <div v-if="problem.images && problem.images.length" class="images-block">
+                <img 
+                  v-for="(image, index) in problem.images" 
+                  :key="index" 
+                  :src="image" 
+                  :alt="'Изображение ' + (index + 1)" 
+                  class="problem-image">
+              </div>
+              
+              <div class="author-block">
+                <img src="@/images/user-png.png" class="author-avatar" alt="Аватар">
+                <div class="author-info">
+                  <h3 class="author-name">
+                    {{ problem.author?.firstName || 'Аноним' }} 
+                    {{ problem.author?.lastName || '' }} 
+                    {{ problem.author?.middleName || '' }}
+                  </h3>
                 </div>
-                <p class="comment-content">{{ comment.content }}</p>
-                <div class="comment-date">{{ formatDate(comment.createdAt) }}</div>
               </div>
             </div>
-            
-            <div v-else class="no-comments">
-              Комментариев пока нет
+
+            <div class="right-column">
+              <h2 class="title-address">Адрес</h2>
+              <p class="text-address">{{ problem.address }}</p>
+
+              <h2 class="title-address">Описание</h2>
+              <p class="text-address">{{ problem.description }}</p>
+
+              <template v-if="canVote">
+                <h3 class="question-problem">Стоит ли решать данную проблему?</h3>
+                <div class="problem__status">
+                  <div class="status-number">{{ positiveVotes }}</div>
+                  <button 
+                    @click="handleVote(1)" 
+                    :class="['btn-answer', { active: userVote === 1 }]"
+                    :disabled="voteMutation.isPending">
+                    {{ 'Да' }}
+                  </button>
+                  <div class="status-number">{{ negativeVotes }}</div>
+                  <button 
+                    @click="handleVote(-1)" 
+                    :class="['btn-answer', { active: userVote === -1 }]"
+                    :disabled="voteMutation.isPending">
+                    {{ 'Нет' }}
+                  </button>
+                </div>
+              </template>
+
+              <div v-if="canModerate && isOnModeration" class="moderation-block">
+                <h3 class="question-problem">Модерация проблемы</h3>
+                <div class="problem__status">
+                  <button @click="moderate('approve')" class="btn-moderate approve">✓ Одобрить проблему</button>
+                  <button @click="moderate('reject')" class="btn-moderate reject">✗ Отклонить проблему</button>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
+
+          <section class="mynic-comments">
+            <h2 class="main-text-mynic">Комментарии муниципалитета</h2>
+            
+            <div v-if="problem.comments && problem.comments.length" class="comments-list">
+              <div v-for="comment in problem.comments" :key="comment.id" class="comment">
+                <div class="comment-header">
+                  <div class="comment-author-info">
+                    <span class="comment-author">
+                      {{ comment.author.firstName }} 
+                      {{ comment.author.lastName || '' }}
+                      {{ comment.author.middleName || '' }}
+                    </span>
+                    <span class="comment-time">{{ formatDate(comment.createdAt) }}</span>
+                  </div>
+                </div>
+                <p class="comment-text">{{ comment.content }}</p>
+              </div>
+            </div>
+
+            <div v-if="canComment" class="mynic-comment-box">
+              <div class="comment-avatar-container">
+                <img src="@/images/user-png.png" class="comment-author-avatar" alt="Аватар">
+              </div>
+              <div class="comment-input-wrapper">
+                <div class="comment-input-container">
+                  <textarea 
+                    v-model="newComment" 
+                    placeholder="Добавить комментарий..." 
+                    class="mynic-comment-input"
+                    rows="3"></textarea>
+                </div>
+                <div class="comment-buttons">
+                  <button 
+                    @click="handleAddComment" 
+                    :disabled="commentMutation.isPending || !newComment.trim()"
+                    class="comment-submit-btn">
+                    <span class="comment-submit-link">
+                      {{ commentMutation.isPending ? 'Отправка...' : 'Добавить комментарий' }}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
       </template>
       
       <template v-else>
@@ -149,190 +264,285 @@ const isOnModeration = computed(() => {
 </template>
 
 <style scoped>
-.moderation-buttons {
+.problem-page {
+  padding: 20px 0;
+}
+
+.problem-layout {
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.btn-approve {
-  padding: 12px 24px;
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.btn-approve:hover {
-  background-color: #45a049;
-}
-
-.btn-reject {
-  padding: 12px 24px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.btn-reject:hover {
-  background-color: #da190b;
-}
-
-.problem-detail {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem 0;
-}
-
-.problem-title {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.problem-meta {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 2rem;
   flex-wrap: wrap;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
+  gap: 30px;
+  margin-bottom: 30px;
 }
 
-.problem-author {
+.left-column {
+  flex: 1;
+  min-width: 300px;
+  max-width: 500px;
+}
+
+.right-column {
+  flex: 1;
+  min-width: 300px;
+}
+
+.images-block {
+  margin-bottom: 20px;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.author-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.problem-status {
-  padding: 0.25rem 0.75rem;
-  background-color: #e3f2fd;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.problem-date {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.problem-votes {
-  padding: 0.25rem 0.75rem;
-  background-color: #f3e5f5;
-  border-radius: 20px;
-  font-weight: 500;
-}
-
-.problem-content {
-  margin-bottom: 2rem;
-}
-
-.problem-description {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-  color: #444;
-}
-
-.problem-images {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .problem-image {
   width: 100%;
-  height: 200px;
+  border-radius: 8px;
   object-fit: cover;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.problem-address {
-  padding: 1rem;
-  background-color: #f5f5f5;
-  border-radius: 8px;
-  border-left: 4px solid #2196f3;
-}
-
-.problem-comments {
-  border-top: 2px solid #e0e0e0;
-  padding-top: 2rem;
-  margin-top: 2rem;
-}
-
-.problem-comments h3 {
-  margin-bottom: 1.5rem;
-  color: #333;
-}
-
-.comment {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background-color: #fff;
-}
-
-.comment-author {
+.author-block {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 8px;
 }
 
-.comment-avatar {
-  width: 32px;
-  height: 32px;
+.author-avatar {
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.comment-author-name {
+.author-name {
+  font-weight: normal;
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.title-address {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.text-address {
+  margin-top: 0;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  color: #555;
+}
+
+.question-problem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  margin-left: -25px;
+  color: #333;
+}
+
+.problem__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.btn-answer {
+  padding: 10px 20px;
+  height: 50px;
+  width: 100px;
+  background-color: #2c6c9a;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-answer:hover {
+  background-color: #1d4e6f;
+  border-color: #1d4e6f;
+}
+
+.btn-answer.active {
+  background-color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.btn-answer.active:last-of-type {
+  background-color: #f44336;
+  border-color: #f44336;
+}
+
+.btn-answer:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-number {
+  font-weight: bold;
+  font-size: 16px;
+  width: 50px;
+  height: 50px;
+  text-align: center;
+  color: #fff;
+  padding: 5px;
+  background-color: #3786BE;
+}
+
+.btn-moderate {
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  margin-right: 10px;
+}
+
+.btn-moderate.approve {
+  color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.btn-moderate.approve:hover {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-moderate.reject {
+  color: #f44336;
+  border-color: #f44336;
+}
+
+.btn-moderate.reject:hover {
+  background-color: #f44336;
+  color: white;
+}
+
+.mynic-comments {
+  margin-top: 40px;
+  padding-top: 20px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.main-text-mynic {
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.comments-list {
+  margin-bottom: 30px;
+}
+
+.comment {
+  padding: 15px 0;
+}
+
+.comment-header {
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.comment-author {
   font-weight: 500;
   color: #333;
 }
 
-.comment-content {
-  margin-bottom: 0.5rem;
+.comment-time {
+  font-size: 12px;
+  color: #888;
+}
+
+.comment-text {
+  margin: 0;
   line-height: 1.5;
-  color: #444;
+  color: #555;
 }
 
-.comment-date {
-  font-size: 0.8rem;
-  color: #666;
+.mynic-comment-box {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+  max-width: 100%;
 }
 
-.loading, .error, .not-found, .no-comments {
+.comment-avatar-container {
+  flex-shrink: 0;
+}
+
+.comment-author-avatar {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+}
+
+.comment-input-wrapper {
+  flex-grow: 1;
+  max-width: 600px;
+}
+
+.comment-input-container {
+  margin-bottom: 10px;
+}
+
+.mynic-comment-input {
+  width: 100%;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.mynic-comment-input:focus {
+  outline: none;
+  border-color: #2c6c9a;
+}
+
+.comment-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.comment-submit-btn {
+  padding: 8px 16px;
+  background-color: #2c6c9a;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comment-submit-btn:hover:not(:disabled) {
+  background-color: #1d4e6f;
+}
+
+.comment-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.comment-submit-link {
+  font-size: 14px;
+}
+
+.loading, .error, .not-found {
+  padding: 40px 0;
   text-align: center;
-  padding: 3rem;
-  font-size: 1.1rem;
-  color: #666;
+  font-size: 18px;
 }
 
 .error {
-  color: #d32f2f;
-}
-
-.not-found {
-  color: #757575;
+  color: #f44336;
 }
 </style>
