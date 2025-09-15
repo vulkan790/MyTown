@@ -132,11 +132,18 @@ const hasProblems = computed(() => {
         </div>
         
         <template v-if="isPending">
-          <div class="loading">Загрузка проблем...</div>
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Загрузка проблем...</p>
+          </div>
         </template>
         
         <template v-else-if="isError">
-          <div class="error">Ошибка загрузки: {{ error.message }}</div>
+          <div class="error">
+            <div class="error-icon">⚠️</div>
+            <p>Ошибка загрузки: {{ error.message }}</p>
+            <button @click="refetch" class="retry-btn">Попробовать снова</button>
+          </div>
         </template>
         
         <template v-else-if="hasProblems">
@@ -144,12 +151,12 @@ const hasProblems = computed(() => {
             <ul class="all__problems-list">
               <li v-for="problem in allProblems" 
                   :key="problem.id">
-                <ProblemCard v-bind="problem" />
+                <ProblemCard v-bind="problem" class="wide-card" />
               </li>
             </ul>
           </div>
           
-          <div class="load-more-container" style="text-align: center;">
+          <div class="load-more-container">
             <button 
               :disabled="!hasNextPage || isFetching" 
               @click="fetchNextPage" 
@@ -161,7 +168,8 @@ const hasProblems = computed(() => {
         
         <template v-else>
           <div class="no-problems">
-            Проблем не найдено
+            <div class="no-problems-icon">📋</div>
+            <p>Проблем не найдено</p>
           </div>
         </template>
       </section>
@@ -170,6 +178,12 @@ const hasProblems = computed(() => {
 </template>
 
 <style scoped>
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
 .problems-header {
   display: flex;
   justify-content: space-between;
@@ -177,6 +191,14 @@ const hasProblems = computed(() => {
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+  padding: 1rem 0;
+}
+
+.all__problems-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
 }
 
 .problem-type-selector {
@@ -185,50 +207,110 @@ const hasProblems = computed(() => {
 }
 
 .type-select {
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   border: 1px solid #ddd;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: white;
   font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
 }
 
 .type-select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
 .loading, .error, .no-problems {
-  text-align: center;
-  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
   font-size: 1.1rem;
+  text-align: center;
+}
+
+.loading p, .error p, .no-problems p {
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
 .error {
-  color: #dc3545;
+  color: #e74c3c;
 }
 
-.no-problems {
-  color: #666;
+.error-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
 }
 
-.load-more-btn {
-  padding: 0.75rem 2rem;
-  background-color: #007bff;
+.retry-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background-color: #e74c3c;
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  margin-top: 2rem;
+  transition: background-color 0.2s;
 }
 
-.load-more-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
+.retry-btn:hover {
+  background-color: #c0392b;
+}
+
+.no-problems {
+  color: #7f8c8d;
+}
+
+.no-problems-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.load-more-btn {
+  padding: 0.8rem 2.5rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .load-more-btn:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.load-more-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .all__problems-list {
@@ -237,5 +319,9 @@ const hasProblems = computed(() => {
   margin: 0;
   display: grid;
   gap: 1.5rem;
+}
+
+.wide-card {
+  width: 100%;
 }
 </style>

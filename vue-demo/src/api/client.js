@@ -340,8 +340,26 @@ export const addCommentToProblem = async (problemId, content) => {
  * @param {number} vote - -1, 0, or 1
  * @returns {Promise<void>}
  */
-export function addVoteToProblem(id, vote) {
-  return api.post(`problems/${id}/vote`, {
-    json: { vote }
-  })
+export async function addVoteToProblem(id, vote) {
+  try {
+    const response = await api.post(`problems/${id}/vote`, {
+      json: { vote }
+    });
+    if (response.status === 204)
+      return;
+    const data = await response.json();
+    return data;
+  } 
+  catch (error) 
+  {
+    if (error.response) 
+    {
+      const errorData = await error.response.json().catch(() => ({}));
+      if (error.response.status === 400)
+        throw new Error(errorData.error || 'problem_is_closed');
+      if (error.response.status === 404)
+        throw new Error('Проблема не найдена');
+    }
+    throw error;
+  }
 }

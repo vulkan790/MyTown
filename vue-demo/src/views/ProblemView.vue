@@ -209,6 +209,14 @@ const isNoActive = computed(() => {
                   </div>
                 </div>
               </template>
+
+              <template v-if="canModerate && isOnModeration">
+                <div class="moderation-buttons">
+                  <h3>Модерация проблемы</h3>
+                  <button @click="moderate('approve')" class="btn-moderate approve">Одобрить</button>
+                  <button @click="moderate('reject')" class="btn-moderate reject">Отклонить</button>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -228,7 +236,7 @@ const isNoActive = computed(() => {
                   </div>
                 </div>
                 <p class="comment-text">{{ comment.content }}</p>
-                </div>
+              </div>
             </div>
 
             <div v-if="canComment" class="mynic-comment-box">
@@ -424,12 +432,28 @@ const isNoActive = computed(() => {
   cursor: not-allowed;
 }
 
+.moderation-buttons {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.moderation-buttons h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #000;
+}
+
 .btn-moderate {
   padding: 10px 15px;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 14px;
   margin-right: 10px;
+  border: 1px solid;
+  background: white;
+  border-radius: 4px;
 }
 
 .btn-moderate.approve {
@@ -456,14 +480,14 @@ const isNoActive = computed(() => {
   margin-top: 40px;
   padding-top: 20px;
   max-width: 800px;
-  margin-left: auto;
+  margin-left: 0;
   margin-right: auto;
 }
 
 .main-text-mynic {
   margin-bottom: 20px;
   color: #000;
-  text-align: center;
+  text-align: left;
 }
 
 .comments-list {
@@ -472,6 +496,11 @@ const isNoActive = computed(() => {
 
 .comment {
   padding: 15px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.comment:last-child {
+  border-bottom: none;
 }
 
 .comment-header {
@@ -481,6 +510,12 @@ const isNoActive = computed(() => {
   align-items: center;
 }
 
+.comment-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .comment-author {
   font-weight: 500;
   color: #000;
@@ -488,7 +523,7 @@ const isNoActive = computed(() => {
 
 .comment-time {
   font-size: 12px;
-  color: #000;
+  color: #666;
 }
 
 .comment-text {
@@ -511,6 +546,7 @@ const isNoActive = computed(() => {
 .comment-author-avatar {
   width: 40px;
   height: 40px;
+  border-radius: 50%;
   object-fit: cover;
 }
 
@@ -526,6 +562,8 @@ const isNoActive = computed(() => {
 .mynic-comment-input {
   width: 100%;
   padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-family: inherit;
   font-size: 14px;
   resize: vertical;
@@ -548,6 +586,7 @@ const isNoActive = computed(() => {
   background-color: #2c6c9a;
   color: white;
   border: none;
+  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
