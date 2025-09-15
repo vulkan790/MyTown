@@ -110,3 +110,27 @@ export const requestPasswordResetSchema = {
 export type RequestPasswordResetErrors = Static<typeof requestPasswordResetErrors>;
 export type RequestPasswordResetBody = Static<typeof requestPasswordResetBody>;
 export type RequestPasswordResetSchema = typeof requestPasswordResetSchema;
+
+// reset password
+const resetPasswordErrors = Type.Union([
+  Type.Literal('token_expired'),
+  Type.Literal('invalid_token'),
+]);
+
+const resetPasswordBody = Type.Object({
+  token: Type.String(),
+  newPassword: Type.String({
+    minLength: 6,
+  }),
+});
+
+export const resetPasswordSchema = {
+  body: resetPasswordBody,
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type ResetPasswordErrors = Static<typeof resetPasswordErrors>;
+export type ResetPasswordBody = Static<typeof resetPasswordBody>;
+export type ResetPasswordSchema = typeof resetPasswordSchema;

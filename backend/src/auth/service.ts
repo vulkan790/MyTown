@@ -13,6 +13,7 @@ import {
   RegisterErrors,
   VerifyEmailErrors,
   RequestPasswordResetErrors,
+  ResetPasswordErrors,
 } from './schemas';
 
 type RegisterResult = Result<
@@ -206,11 +207,51 @@ export const reigsterAuthService = async (fastify: FastifyInstance) => {
     return ok();
   };
 
+  const resetPassword = async (token: string, newPassword: string) => {
+    // TODO: add email check or smh
+    const resetRequest = await drizzle
+      .select()
+      .from(passwordResets)
+      .where(eq(passwordResets.token, token))
+      .orderBy(desc(passwordResets.createdAt))
+      .then((r) => r.at(0));
+
+    if (!resetRequest) {
+      return err('invalid_token');
+    }
+
+    const now = new Date();
+    if (resetRequest.expiresAt < now) {
+      return err('token_expired');
+    }
+
+    const hashedPassword = await fastify.bcrypt.hash(newPassword);
+
+    const updateResult = await fromPromise(
+      drizzle.transaction(async (tx) => {
+        await tx.update(users).set({
+          password: hashedPassword,
+        }).where(eq(users.id, resetRequest.userId));
+
+        await tx.delete(passwordResets).where(eq(passwordResets.id, resetRequest.id));
+      }),
+      (e) => e
+    );
+
+    if (updateResult.isErr()) {
+      console.error('Error while resetting password', updateResult.error);
+      return err('unknown_error');
+    }
+
+    return ok();
+  };
+
   fastify.decorate('authService', {
     register,
     login,
     verifyEmail,
     requestPasswordReset,
+    resetPassword,
   });
 };
 
@@ -221,6 +262,7 @@ declare module 'fastify' {
       login: (email: string, password: string) => Promise<Result<string, LoginErrors | 'unknown_error'>>;
       verifyEmail: (token: string) => Promise<Result<void, VerifyEmailErrors | 'unknown_error'>>;
       requestPasswordReset: (email: string) => Promise<Result<void, RequestPasswordResetErrors | 'unknown_error'>>;
+      resetPassword: (token: string, newPassword: string) => Promise<Result<void, ResetPasswordErrors | 'unknown_error'>>;
     };
   }
 }
