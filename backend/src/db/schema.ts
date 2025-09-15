@@ -24,6 +24,14 @@ export const emailVerifications = pgTable('email_verifications', {
   createdAt: timestamp().notNull().$defaultFn(() => new Date()),
 });
 
+export const passwordResets = pgTable('password_resets', {
+  id: serial().primaryKey().notNull(),
+  userId: integer().notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text().notNull(),
+  createdAt: timestamp().notNull().$defaultFn(() => new Date()),
+  expiresAt: timestamp().notNull(),
+});
+
 export const problems = pgTable('problems', {
   id: serial().primaryKey().notNull(),
   title: text().notNull(),

@@ -10,6 +10,8 @@ export async function AuthController (fastify: FastifyTypebox) {
   fastify.post('/login', { schema: schemas.loginSchema }, loginEndpoint);
   fastify.post('/register', { schema: schemas.registerSchema }, registerEndpoint);
   fastify.post('/verify', { schema: schemas.verifyEmailSchema }, verifyEmail);
+  fastify.post('/password-reset', { schema: schemas.resetPasswordSchema }, resetPassword);
+  fastify.post('/password-reset/request', { schema: schemas.requestPasswordResetSchema }, requestPasswordReset);
 }
 
 async function registerEndpoint (
@@ -86,5 +88,53 @@ async function verifyEmail (
   reply.statusCode = 400;
   return {
     error: verificationResult.error,
+  };
+}
+
+async function requestPasswordReset (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schemas.RequestPasswordResetSchema>,
+  reply: FastifyReplyTypeBox<schemas.RequestPasswordResetSchema>
+) {
+  const { email } = request.body;
+
+  const resetRequestResult = await this.authService.requestPasswordReset(email);
+  if (resetRequestResult.isOk()) {
+    await reply.status(204).send();
+    return;
+  }
+
+  if (resetRequestResult.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: resetRequestResult.error,
+  };
+}
+
+async function resetPassword (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schemas.ResetPasswordSchema>,
+  reply: FastifyReplyTypeBox<schemas.ResetPasswordSchema>
+) {
+  const { token, newPassword } = request.body;
+
+  const resetResult = await this.authService.resetPassword(token, newPassword);
+  if (resetResult.isOk()) {
+    await reply.status(204).send();
+    return;
+  }
+
+  if (resetResult.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: resetResult.error,
   };
 }

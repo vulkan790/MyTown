@@ -611,3 +611,58 @@ query (всё, что идет после вопроса в конце URL), pat
 ```json
 // проблема не найдена
 ```
+
+## POST /password-reset/request
+
+Запрос на сброс пароля. Отправляет инструкции по сбросу пароля на указанный email. Не чаще чем раз в 15 минут
+
+### Request
+
+**Body**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+### Response
+
+**204 No Content**  
+```json
+// Успех
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "" // email_not_found
+}
+```
+
+## POST /password-reset
+
+Сброс пароля с использованием токена, полученного по email.
+
+### Request
+
+**Body**
+```json
+{
+  "token": "",
+  "newPassword": ""
+}
+```
+
+### Response
+
+**204 No Content**  
+```json
+// Успех
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "token_expired" // или "invalid_token"
+}
+```
