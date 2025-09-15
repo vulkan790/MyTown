@@ -88,3 +88,25 @@ export const verifyEmailSchema = {
 
 export type VerifyEmailErrors = Static<typeof verifyEmailErrors>;
 export type VerifyEmailSchema = typeof verifyEmailSchema;
+
+// password reset request
+const passwordResetRequestErrors = Type.Union([
+  Type.Literal('email_not_found'),
+]);
+
+const passwordResetRequestBody = Type.Object({
+  email: Type.String({
+    format: 'email',
+  }),
+});
+
+export const passwordResetRequestSchema = {
+  body: passwordResetRequestBody,
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type PasswordResetRequestErrors = Static<typeof passwordResetRequestErrors>;
+export type PasswordResetRequestBody = Static<typeof passwordResetRequestBody>;
+export type PasswordResetRequestSchema = typeof passwordResetRequestSchema;

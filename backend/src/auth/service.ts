@@ -1,16 +1,18 @@
 import { FastifyInstance } from 'fastify';
 import { fastifyBcrypt } from 'fastify-bcrypt';
 
+import { randomUUID } from 'crypto';
 import { ok, err, fromPromise, type Result } from 'neverthrow';
 
-import { eq } from 'drizzle-orm';
-import { emailVerifications, users } from '../db/schema.js';
+import { desc, eq } from 'drizzle-orm';
+import { emailVerifications, passwordResets, users } from '../db/schema.js';
 
 import {
   LoginErrors,
   RegisterBody,
   RegisterErrors,
   VerifyEmailErrors,
+  PasswordResetRequestErrors,
 } from './schemas';
 
 type RegisterResult = Result<
@@ -157,10 +159,58 @@ export const reigsterAuthService = async (fastify: FastifyInstance) => {
     return await transaction;
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const user = await drizzle.select().from(users).where(eq(users.email, email)).then((u) => u.at(0));
+    if (!user) {
+      return err('email_not_found');
+    }
+
+    const resetRequest = await drizzle
+      .select()
+      .from(passwordResets)
+      .where(eq(passwordResets.userId, user.id))
+      .orderBy(desc(passwordResets.createdAt))
+      .then((r) => r.at(0));
+
+    if (resetRequest) {
+      const now = new Date();
+      const diff = (now.getTime() - resetRequest.createdAt.getTime()) / 1000 / 60;
+
+      if (diff < 15) {
+        return ok();
+      }
+    }
+
+    const token = randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1_000);
+
+    const createRequestResult = await fromPromise(
+      drizzle.insert(passwordResets).values({
+        userId: user.id,
+        token,
+        expiresAt,
+      }),
+      (e) => e
+    );
+
+    if (createRequestResult.isErr()) {
+      console.error('Error while creating password reset request', createRequestResult.error);
+      return err('unknown_error');
+    }
+
+    const resetPasswordUrl = new URL('/reset-password', DOMAIN);
+    resetPasswordUrl.searchParams.set('token', token);
+
+    fastify.email.sendResetPasswordEmail(user.email, resetPasswordUrl.toString());
+
+    return ok();
+  };
+
   fastify.decorate('authService', {
     register,
     login,
     verifyEmail,
+    requestPasswordReset,
   });
 };
 
@@ -170,6 +220,7 @@ declare module 'fastify' {
       register: (registerPayload: RegisterBody) => Promise<Result<string, RegisterErrors | 'unknown_error'>>;
       login: (email: string, password: string) => Promise<Result<string, LoginErrors | 'unknown_error'>>;
       verifyEmail: (token: string) => Promise<Result<void, VerifyEmailErrors | 'unknown_error'>>;
+      requestPasswordReset: (email: string) => Promise<Result<void, PasswordResetRequestErrors | 'unknown_error'>>;
     };
   }
 }
