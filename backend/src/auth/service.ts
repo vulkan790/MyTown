@@ -12,7 +12,7 @@ import {
   RegisterBody,
   RegisterErrors,
   VerifyEmailErrors,
-  PasswordResetRequestErrors,
+  RequestPasswordResetErrors,
 } from './schemas';
 
 type RegisterResult = Result<
@@ -220,7 +220,7 @@ declare module 'fastify' {
       register: (registerPayload: RegisterBody) => Promise<Result<string, RegisterErrors | 'unknown_error'>>;
       login: (email: string, password: string) => Promise<Result<string, LoginErrors | 'unknown_error'>>;
       verifyEmail: (token: string) => Promise<Result<void, VerifyEmailErrors | 'unknown_error'>>;
-      requestPasswordReset: (email: string) => Promise<Result<void, PasswordResetRequestErrors | 'unknown_error'>>;
+      requestPasswordReset: (email: string) => Promise<Result<void, RequestPasswordResetErrors | 'unknown_error'>>;
     };
   }
 }

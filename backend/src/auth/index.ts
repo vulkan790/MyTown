@@ -10,7 +10,7 @@ export async function AuthController (fastify: FastifyTypebox) {
   fastify.post('/login', { schema: schemas.loginSchema }, loginEndpoint);
   fastify.post('/register', { schema: schemas.registerSchema }, registerEndpoint);
   fastify.post('/verify', { schema: schemas.verifyEmailSchema }, verifyEmail);
-  fastify.post('/password-reset/request', { schema: schemas.passwordResetRequestSchema }, requestPasswordReset);
+  fastify.post('/password-reset/request', { schema: schemas.requestPasswordResetSchema }, requestPasswordReset);
 }
 
 async function registerEndpoint (
@@ -92,8 +92,8 @@ async function verifyEmail (
 
 async function requestPasswordReset (
   this: FastifyInstance,
-  request: FastifyRequestTypeBox<schemas.PasswordResetRequestSchema>,
-  reply: FastifyReplyTypeBox<schemas.PasswordResetRequestSchema>
+  request: FastifyRequestTypeBox<schemas.RequestPasswordResetSchema>,
+  reply: FastifyReplyTypeBox<schemas.RequestPasswordResetSchema>
 ) {
   const { email } = request.body;
 
