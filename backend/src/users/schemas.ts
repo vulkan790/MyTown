@@ -1,5 +1,5 @@
 import { FastifySchema } from 'fastify';
-import { Type } from '@sinclair/typebox';
+import { Static, Type } from '@sinclair/typebox';
 
 const UserProblem = Type.Object({
   id: Type.Number(),
@@ -36,3 +36,21 @@ export const getCurrentUserSchema = {
 } satisfies FastifySchema;
 
 export type GetCurrentUserSchema = typeof getCurrentUserSchema;
+
+// edit current user
+const editCurrentUserBody = Type.Composite([
+  Type.Pick(User, ['firstName', 'lastName', 'middleName', 'gender']),
+  Type.Object({
+    password: Type.Optional(Type.String({ minLength: 6 })),
+  }),
+]);
+
+export const editCurrentUserSchema = {
+  body: editCurrentUserBody,
+  response: {
+    204: Type.Null(),
+  },
+} satisfies FastifySchema;
+
+export type EditCurrentUserSchema = typeof editCurrentUserSchema;
+export type EditCurrentUserBody = Static<typeof editCurrentUserBody>;

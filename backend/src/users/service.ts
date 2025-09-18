@@ -5,6 +5,8 @@ import { ok, err, fromPromise, type Result } from 'neverthrow';
 import { desc, eq, sql, sum } from 'drizzle-orm';
 import { problems, problemVotes, problemImages, users } from '../db/schema.js';
 
+import type { EditCurrentUserBody } from './schemas.js';
+
 type RichUser = {
   id: number;
   email: string;
@@ -129,8 +131,34 @@ export const registerUserService = async (fastify: FastifyInstance) => {
     return ok(richUser);
   };
 
+  const editCurrentUser = async (userId: number, editUserPayload: EditCurrentUserBody) => {
+    const updateData: Partial<typeof users.$inferSelect> = {
+      firstName: editUserPayload.firstName,
+      lastName: editUserPayload.lastName,
+      middleName: editUserPayload.middleName,
+      gender: editUserPayload.gender,
+
+      password: editUserPayload.password ? await fastify.bcrypt.hash(editUserPayload.password) : undefined,
+    };
+
+    const updateResult = await fromPromise(
+      drizzle.update(users)
+        .set(updateData)
+        .where(eq(users.id, userId)),
+      (e) => e
+    );
+
+    if (updateResult.isErr()) {
+      console.error('Error while updating user', updateResult.error);
+      return err('unknown_error');
+    }
+
+    return ok();
+  };
+
   fastify.decorate('userService', {
     getCurrentUser,
+    editCurrentUser,
   });
 };
 
@@ -138,6 +166,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     userService: {
       getCurrentUser: (userId: number) => Promise<Result<RichUser, 'user_not_found' | 'unknown_error'>>;
+      editCurrentUser: (userId: number, editUserPayload: EditCurrentUserBody) => Promise<Result<void, 'unknown_error'>>;
     };
   }
 }
