@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { FastifySchema } from 'fastify';
 import { Static, Type } from '@sinclair/typebox';
 
@@ -54,3 +55,25 @@ export const editCurrentUserSchema = {
 
 export type EditCurrentUserSchema = typeof editCurrentUserSchema;
 export type EditCurrentUserBody = Static<typeof editCurrentUserBody>;
+
+// upload avatar
+const uploadUserAvatarErrors = Type.Union([
+  Type.Literal('too_large_file'),
+  Type.Literal('no_image'),
+  Type.Literal('invalid_mime'),
+]);
+
+const uploadUserAvatarResponse = Type.Object({
+  avatarUrl: Type.String(),
+});
+
+export const uploadUserAvatarSchema = {
+  // @ts-ignore: ts(2353)
+  consumes: ['multipart/form-data'],
+  response: {
+    201: uploadUserAvatarResponse,
+  },
+} satisfies FastifySchema;
+
+export type UploadUserAvatarSchema = typeof uploadUserAvatarSchema;
+export type UploadUserAvatarErrors = Static<typeof uploadUserAvatarErrors>;
