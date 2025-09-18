@@ -298,6 +298,13 @@ query (всё, что идет после вопроса в конце URL), pat
 
 ### Request
 
+**Headers**
+```json
+{
+  "authorization": "Bearer jwt-token"
+}
+```
+
 **Body**
 ```json
 {
