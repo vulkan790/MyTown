@@ -196,14 +196,12 @@ const isNoActive = computed(() => {
                   <div class="vote-buttons">
                     <button 
                       @click="handleVote(1)" 
-                      :class="['btn-answer', { active: isYesActive }]"
-                      :disabled="voteMutation.isPending">
+                      :class="['btn-answer', { active: isYesActive }]">
                       {{ 'Да' }}
                     </button>
                     <button 
                       @click="handleVote(-1)" 
-                      :class="['btn-answer', { active: isNoActive }]"
-                      :disabled="voteMutation.isPending">
+                      :class="['btn-answer', { active: isNoActive }]">
                       {{ 'Нет' }}
                     </button>
                   </div>
