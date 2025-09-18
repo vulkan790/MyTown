@@ -5,6 +5,12 @@ import { ok, err, fromPromise, type Result } from 'neverthrow';
 import { desc, eq, sql, sum } from 'drizzle-orm';
 import { problems, problemVotes, problemImages, users } from '../db/schema.js';
 
+import type { EditCurrentUserBody, UploadUserAvatarErrors } from './schemas.js';
+import { MultipartFile } from '@fastify/multipart';
+import { randomUUID } from 'crypto';
+import { pipeline } from 'stream/promises';
+import { createWriteStream } from 'fs';
+
 type RichUser = {
   id: number;
   email: string;
@@ -129,8 +135,74 @@ export const registerUserService = async (fastify: FastifyInstance) => {
     return ok(richUser);
   };
 
+  const editCurrentUser = async (userId: number, editUserPayload: EditCurrentUserBody) => {
+    const updateData: Partial<typeof users.$inferSelect> = {
+      firstName: editUserPayload.firstName,
+      lastName: editUserPayload.lastName,
+      middleName: editUserPayload.middleName,
+      gender: editUserPayload.gender,
+
+      password: editUserPayload.password ? await fastify.bcrypt.hash(editUserPayload.password) : undefined,
+    };
+
+    const updateResult = await fromPromise(
+      drizzle.update(users)
+        .set(updateData)
+        .where(eq(users.id, userId)),
+      (e) => e
+    );
+
+    if (updateResult.isErr()) {
+      console.error('Error while updating user', updateResult.error);
+      return err('unknown_error');
+    }
+
+    return ok();
+  };
+
+  const uploadUserAvatar = async (userId: number, file?: MultipartFile['file'], mime?: string) => {
+    if (!file) {
+      return err('no_image');
+    }
+
+    if (!mime?.startsWith('image/')) {
+      return err('invalid_mime');
+    }
+
+    const filename = `${randomUUID()}.${mime.split('/')[1]}`;
+    const filepath = `./uploads/${filename}`;
+    const saveResult = await fromPromise(
+      pipeline(file, createWriteStream(filepath)),
+      (e) => e
+    );
+
+    if (saveResult.isErr()) {
+      console.error('Error while saving avatar file', saveResult.error);
+      return err('unknown_error');
+    }
+
+    const avatarUrl = `/uploads/${filename}`;
+    const updateAvatarResult = await fromPromise(
+      drizzle.update(users)
+        .set({ avatarUrl })
+        .where(eq(users.id, userId)),
+      (e) => e
+    );
+
+    if (updateAvatarResult.isErr()) {
+      console.error('Error while updating user avatar', updateAvatarResult.error);
+      return err('unknown_error');
+    }
+
+    return ok({
+      avatarUrl,
+    });
+  };
+
   fastify.decorate('userService', {
     getCurrentUser,
+    editCurrentUser,
+    uploadUserAvatar,
   });
 };
 
@@ -138,6 +210,8 @@ declare module 'fastify' {
   interface FastifyInstance {
     userService: {
       getCurrentUser: (userId: number) => Promise<Result<RichUser, 'user_not_found' | 'unknown_error'>>;
+      editCurrentUser: (userId: number, editUserPayload: EditCurrentUserBody) => Promise<Result<void, 'unknown_error'>>;
+      uploadUserAvatar: (userId: number, file?: MultipartFile['file'], mime?: string) => Promise<Result<{ avatarUrl: string }, UploadUserAvatarErrors | 'unknown_error'>>;
     };
   }
 }

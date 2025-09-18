@@ -292,6 +292,80 @@ query (всё, что идет после вопроса в конце URL), pat
 // empty
 ```
 
+## PUT /api/users/me
+
+Изменение профиля пользователя
+
+### Request
+
+**Headers**
+```json
+{
+  "authorization": "Bearer jwt-token"
+}
+```
+
+**Body**
+```json
+{
+  "password": "SecretPassword!2", // (опциональное поле)
+
+  "firstName": "Борис",
+  "lastName": "Шевцев",
+  "middleName": "Константинович", // может быть пустым (отчество)
+  "gender": "male" // "male" | "female"
+}
+```
+
+### Response
+
+**204 No Content**
+```json
+// profile updated
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "invalid_form" // ошибки валидации
+}
+```
+
+## POST /api/users/me/avatar
+
+Обновление аватарки пользователя
+
+### Request
+
+**Headers**
+```json
+{
+  "authorization": "Bearer jwt-token",
+  "content-type": "multipart/form-data"
+}
+```
+
+### Response
+
+**201 Created**
+```json
+{
+  "avatarUrl": "/uploads/uuid.png" // новая ссылка на автарку
+}
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "" // "too_large_file"
+}
+```
+
+**401 Unauthorized**
+```json
+// empty
+```
+
 ## GET /api/problems/address-suggest
 
 Подсказки для ввода адреса.
@@ -612,7 +686,7 @@ query (всё, что идет после вопроса в конце URL), pat
 // проблема не найдена
 ```
 
-## POST /password-reset/request
+## POST /api/password-reset/request
 
 Запрос на сброс пароля. Отправляет инструкции по сбросу пароля на указанный email. Не чаще чем раз в 15 минут
 
@@ -639,7 +713,7 @@ query (всё, что идет после вопроса в конце URL), pat
 }
 ```
 
-## POST /password-reset
+## POST /api/password-reset
 
 Сброс пароля с использованием токена, полученного по email.
 

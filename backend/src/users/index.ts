@@ -9,6 +9,8 @@ export async function UsersController (fastify: FastifyTypebox) {
   fastify.addHook('onRequest', fastify.jwtHelpers.authenticate);
 
   fastify.get('/me', { schema: schemas.getCurrentUserSchema }, getCurrentUser);
+  fastify.put('/me', { schema: schemas.editCurrentUserSchema }, editCurrentUser);
+  fastify.post('/me/avatar', { schema: schemas.uploadUserAvatarSchema }, uploadUserAvatar);
 }
 
 async function getCurrentUser (
@@ -30,4 +32,46 @@ async function getCurrentUser (
   }
 
   await reply.status(500).send();
+}
+
+async function editCurrentUser (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schemas.EditCurrentUserSchema>,
+  reply: FastifyReplyTypeBox<schemas.EditCurrentUserSchema>
+) {
+  const userId = request.user.userId;
+  const editPayload = request.body;
+
+  const editResult = await this.userService.editCurrentUser(userId, editPayload);
+  if (editResult.isOk()) {
+    await reply.status(204).send();
+    return;
+  }
+
+  await reply.status(500).send();
+}
+
+async function uploadUserAvatar (
+  this: FastifyInstance,
+  request: FastifyRequestTypeBox<schemas.UploadUserAvatarSchema>,
+  reply: FastifyReplyTypeBox<schemas.UploadUserAvatarSchema>
+) {
+  const userId = request.user.userId;
+  const file = await request.file();
+
+  const uploadResult = await this.userService.uploadUserAvatar(userId, file?.file, file?.mimetype);
+  if (uploadResult.isOk()) {
+    await reply.status(201).send(uploadResult.value);
+    return;
+  }
+
+  if (uploadResult.error === 'unknown_error') {
+    await reply.status(500).send();
+    return;
+  }
+
+  reply.statusCode = 400;
+  return {
+    error: uploadResult.error,
+  };
 }
