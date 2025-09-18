@@ -301,7 +301,7 @@ query (всё, что идет после вопроса в конце URL), pat
 **Body**
 ```json
 {
-  "password": "SecretPassword!2",
+  "password": "SecretPassword!2", // (опциональное поле)
 
   "firstName": "Борис",
   "lastName": "Шевцев",
