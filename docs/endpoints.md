@@ -292,6 +292,38 @@ query (всё, что идет после вопроса в конце URL), pat
 // empty
 ```
 
+## PUT /api/users/me
+
+Изменение профиля пользователя
+
+### Request
+
+**Body**
+```json
+{
+  "password": "SecretPassword!2",
+
+  "firstName": "Борис",
+  "lastName": "Шевцев",
+  "middleName": "Константинович", // может быть пустым (отчество)
+  "gender": "male" // "male" | "female"
+}
+```
+
+### Response
+
+**204 No Content**
+```json
+// profile updated
+```
+
+**400 Bad Request**
+```json
+{
+  "error": "invalid_form" // ошибки валидации
+}
+```
+
 ## GET /api/problems/address-suggest
 
 Подсказки для ввода адреса.
