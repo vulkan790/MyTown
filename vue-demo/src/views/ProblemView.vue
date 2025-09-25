@@ -66,15 +66,18 @@ const statusNames = {
 }
 
 const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
+  if (!dateString)
+   return ''
+  const date = new Date(dateString + 'Z') 
   return date.toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
+    timeZone: 'Europe/Moscow' 
   }) + ' ' + date.toLocaleTimeString('ru-RU', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Europe/Moscow'
   })
 }
 
@@ -131,7 +134,8 @@ const isRegularUser = computed(() => {
 })
 
 const canVote = computed(() => {
-  return isRegularUser.value || isGovUser.value
+  const isProblemSolved = problem.value?.status === 'solved'
+  return (isRegularUser.value || isGovUser.value) && !isProblemSolved
 })
 
 const canComment = computed(() => {
@@ -148,6 +152,10 @@ const canClaimProblem = computed(() => {
 
 const canResolveProblem = computed(() => {
   return isGovUser.value && problem.value?.status === 'solving'
+})
+
+const isProblemSolved = computed(() => {
+  return problem.value?.status === 'solved'
 })
 
 const userVote = computed(() => {
@@ -219,7 +227,7 @@ const isNoActive = computed(() => {
               <h2 class="title-address">Описание</h2>
               <p class="text-address">{{ problem.description }}</p>
 
-              <template v-if="canVote">
+              <template v-if="canVote && !isProblemSolved">
                 <h3 class="question-problem">Стоит ли решать данную проблему?</h3>
                 <div class="problem__status">
                   <div class="votes-counter">
@@ -243,6 +251,17 @@ const isNoActive = computed(() => {
                 </div>
               </template>
 
+              <div v-if="isProblemSolved" class="voting-closed-message">
+                <h3>Голосование завершено</h3>
+                <p>Проблема решена. Голосование больше недоступно.</p>
+                <div class="final-votes">
+                  <span class="votes-label">Итоговое количество голосов:</span>
+                  <span class="votes-number" :class="{ positive: totalVotes > 0, negative: totalVotes < 0 }">
+                    {{ totalVotes }}
+                  </span>
+                </div>
+              </div>
+
               <template v-if="canModerate && isOnModeration">
                 <div class="moderation-buttons">
                   <h3>Модерация проблемы</h3>
@@ -254,6 +273,12 @@ const isNoActive = computed(() => {
               <template v-if="isGovUser">
                 <div class="gov-buttons">
                   <h3>Управление проблемой</h3>
+                  <button 
+                    v-if="canClaimProblem" 
+                    @click="handleStatusChange('claim')" 
+                    class="btn-gov claim">
+                    Взять в работу
+                  </button>
                   <button 
                     v-if="canResolveProblem" 
                     @click="handleStatusChange('resolve')" 
@@ -313,10 +338,9 @@ const isNoActive = computed(() => {
                 <div class="comment-buttons">
                   <button 
                     @click="handleAddComment" 
-                    class="comment-submit-btn"
-                    :disabled="commentMutation.isPending">
+                    class="comment-submit-btn">
                     <span class="comment-submit-link">
-                      {{ commentMutation.isPending ? 'Отправка...' : 'Добавить комментарий' }}
+                      Добавить комментарий
                     </span>
                   </button>
                 </div>
@@ -527,6 +551,32 @@ const isNoActive = computed(() => {
 .btn-answer:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.voting-closed-message {
+  text-align: center;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.voting-closed-message h3 {
+  color: #6c757d;
+  margin-bottom: 10px;
+}
+
+.voting-closed-message p {
+  color: #6c757d;
+  margin-bottom: 15px;
+}
+
+.final-votes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
 }
 
 .moderation-buttons,
