@@ -316,11 +316,32 @@ export async function moderateProblem(id, decision) {
  * @param {'claim' | 'resolve'} action
  * @returns {Promise<void>}
  */
-export function updateProblemStatus(id, action) {
-  return api.post(`problems/${id}/town`, {
-    json: { action },
-  }).json()
-}
+export const updateProblemStatus = async (problemId, action) => {
+  try 
+  {
+    const response = await api.post(`problems/${problemId}/town`, {
+      json: { action }
+    });
+    if (response.status === 204)
+      return;
+    if (response.status === 401)
+      throw new Error('Требуется авторизация');
+    if (response.status === 403)
+      throw new Error('Недостаточно прав');
+    if (response.status === 404)
+      throw new Error('Проблема не найдена');
+    throw new Error(`Ошибка обновления статуса: ${response.status}`);
+  } 
+  catch (error) 
+  {
+    if (error.response) 
+    {
+      const errorData = await error.response.json().catch(() => ({}));
+      throw new Error(errorData.error || error.message);
+    }
+    throw error;
+  }
+};
 
 /**
  * Add a comment to a problem.
@@ -359,6 +380,36 @@ export async function addVoteToProblem(id, vote) {
         throw new Error(errorData.error || 'problem_is_closed');
       if (error.response.status === 404)
         throw new Error('Проблема не найдена');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Upload user avatar.
+ * @param {FormData} formData
+ * @returns {Promise<{ avatarUrl: string }>}
+ */
+export const uploadUserAvatar = async (formData) => {
+  try {
+    const response = await api.post('users/me/avatar', {
+      body: formData
+    });
+    
+    if (response.status === 201) {
+      return response.json();
+    }
+    
+    throw new Error('Ошибка загрузки аватара');
+  } catch (error) {
+    if (error.response) {
+      const errorData = await error.response.json();
+      if (error.response.status === 400) {
+        throw new Error(errorData.error || 'Ошибка загрузки файла');
+      }
+      if (error.response.status === 401) {
+        throw new Error('Требуется авторизация');
+      }
     }
     throw error;
   }

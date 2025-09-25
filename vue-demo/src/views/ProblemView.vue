@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem } from '@/api/client'
+import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem, updateProblemStatus } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
 import { useQuery, useMutation } from '@tanstack/vue-query'
 import { useUser } from '@/api/useUser'
+import fallbackAvatar from '@/images/user-png.png'
 
 const route = useRoute()
 const userStore = useUser()
@@ -45,6 +46,17 @@ const commentMutation = useMutation({
   }
 })
 
+const statusMutation = useMutation({
+  mutationFn: (action) => updateProblemStatus(problemId.value, action),
+  onSuccess: () => {
+    refetch()
+    alert('Статус проблемы успешно обновлен!')
+  },
+  onError: (error) => {
+    alert('Ошибка при изменении статуса: ' + error.message)
+  }
+})
+
 const statusNames = {
   'wait_for_solve': 'В ожидании решения',
   'solving': 'В процессе решения',
@@ -75,6 +87,14 @@ const moderate = async (decision) => {
     console.error('Ошибка модерации:', error)
     alert('Ошибка при выполнении модерации: ' + error.message)
   }
+}
+
+const handleStatusChange = (action) => {
+  if (!userStore.isLoggedIn) {
+    alert('Для изменения статуса необходимо авторизоваться')
+    return
+  }
+  statusMutation.mutate(action)
 }
 
 const handleVote = (vote) => {
@@ -122,6 +142,14 @@ const isOnModeration = computed(() => {
   return problem.value?.status === 'on_moderation'
 })
 
+const canClaimProblem = computed(() => {
+  return isGovUser.value && problem.value?.status === 'wait_for_solve'
+})
+
+const canResolveProblem = computed(() => {
+  return isGovUser.value && problem.value?.status === 'solving'
+})
+
 const userVote = computed(() => {
   return problem.value?.vote || 0
 })
@@ -166,13 +194,20 @@ const isNoActive = computed(() => {
               </div>
               
               <div class="author-block">
-                <img src="@/images/user-png.png" class="author-avatar" alt="Аватар">
+                <img 
+                  :src="problem.author?.avatarUrl || fallbackAvatar" 
+                  class="author-avatar" 
+                  alt="Аватар"
+                  @error="(e) => e.target.src = fallbackAvatar">
                 <div class="author-info">
                   <h3 class="author-name">
                     {{ problem.author?.firstName || 'Аноним' }} 
                     {{ problem.author?.lastName || '' }} 
                     {{ problem.author?.middleName || '' }}
                   </h3>
+                  <div class="problem-status-badge" :class="problem.status">
+                    {{ statusNames[problem.status] || problem.status }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -215,6 +250,21 @@ const isNoActive = computed(() => {
                   <button @click="moderate('reject')" class="btn-moderate reject">Отклонить</button>
                 </div>
               </template>
+              
+              <template v-if="isGovUser">
+                <div class="gov-buttons">
+                  <h3>Управление проблемой</h3>
+                  <button 
+                    v-if="canResolveProblem" 
+                    @click="handleStatusChange('resolve')" 
+                    class="btn-gov resolve">
+                    Проблема решена
+                  </button>
+                  <div v-if="problem.status === 'solved'" class="problem-solved-badge">
+                    ✅ Проблема решена
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -224,6 +274,13 @@ const isNoActive = computed(() => {
             <div v-if="problem.comments && problem.comments.length" class="comments-list">
               <div v-for="comment in problem.comments" :key="comment.id" class="comment">
                 <div class="comment-header">
+                  <div class="comment-author-avatar-container">
+                    <img 
+                      :src="comment.author?.avatarUrl || fallbackAvatar" 
+                      class="comment-author-avatar"
+                      alt="Аватар"
+                      @error="(e) => e.target.src = fallbackAvatar">
+                  </div>
                   <div class="comment-author-info">
                     <span class="comment-author">
                       {{ comment.author.firstName }} 
@@ -239,7 +296,11 @@ const isNoActive = computed(() => {
 
             <div v-if="canComment" class="mynic-comment-box">
               <div class="comment-avatar-container">
-                <img src="@/images/user-png.png" class="comment-author-avatar" alt="Аватар">
+                <img 
+                  :src="userStore.user?.avatarUrl || fallbackAvatar" 
+                  class="comment-author-avatar"
+                  alt="Аватар"
+                  @error="(e) => e.target.src = fallbackAvatar">
               </div>
               <div class="comment-input-wrapper">
                 <div class="comment-input-container">
@@ -252,8 +313,8 @@ const isNoActive = computed(() => {
                 <div class="comment-buttons">
                   <button 
                     @click="handleAddComment" 
-                    :disabled="commentMutation.isPending || !newComment.trim()"
-                    class="comment-submit-btn">
+                    class="comment-submit-btn"
+                    :disabled="commentMutation.isPending">
                     <span class="comment-submit-link">
                       {{ commentMutation.isPending ? 'Отправка...' : 'Добавить комментарий' }}
                     </span>
@@ -324,11 +385,49 @@ const isNoActive = computed(() => {
   object-fit: cover;
 }
 
+.author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 .author-name {
   font-weight: normal;
   margin: 0;
   font-size: 1.1rem;
   color: #000;
+}
+
+.problem-status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.problem-status-badge.wait_for_solve {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.problem-status-badge.solving {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.problem-status-badge.solved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.problem-status-badge.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.problem-status-badge.on_moderation {
+  background-color: #e2e3e5;
+  color: #383d41;
 }
 
 .title-address {
@@ -430,14 +529,16 @@ const isNoActive = computed(() => {
   cursor: not-allowed;
 }
 
-.moderation-buttons {
+.moderation-buttons,
+.gov-buttons {
   margin-top: 20px;
   padding: 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
 }
 
-.moderation-buttons h3 {
+.moderation-buttons h3,
+.gov-buttons h3 {
   margin-top: 0;
   margin-bottom: 10px;
   color: #000;
@@ -474,6 +575,52 @@ const isNoActive = computed(() => {
   color: white;
 }
 
+.btn-gov {
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  margin-right: 10px;
+  border: 1px solid;
+  background: white;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.btn-gov.claim {
+  color: #2196F3;
+  border-color: #2196F3;
+}
+
+.btn-gov.claim:hover:not(:disabled) {
+  background-color: #2196F3;
+  color: white;
+}
+
+.btn-gov.resolve {
+  color: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.btn-gov.resolve:hover:not(:disabled) {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-gov:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.problem-solved-badge {
+  padding: 10px 15px;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
 .mynic-comments {
   margin-top: 40px;
   padding-top: 20px;
@@ -495,6 +642,9 @@ const isNoActive = computed(() => {
 .comment {
   padding: 15px 0;
   border-bottom: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .comment:last-child {
@@ -502,10 +652,20 @@ const isNoActive = computed(() => {
 }
 
 .comment-header {
-  margin-bottom: 8px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
+}
+
+.comment-author-avatar-container {
+  flex-shrink: 0;
+}
+
+.comment-author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .comment-author-info {
@@ -528,6 +688,7 @@ const isNoActive = computed(() => {
   margin: 0;
   line-height: 1.5;
   color: #000;
+  padding-left: 52px;
 }
 
 .mynic-comment-box {
@@ -539,13 +700,6 @@ const isNoActive = computed(() => {
 
 .comment-avatar-container {
   flex-shrink: 0;
-}
-
-.comment-author-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .comment-input-wrapper {

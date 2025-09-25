@@ -78,6 +78,10 @@ const canModerate = computed(() => {
 const isOnModeration = computed(() => {
   return props.status === 'on_moderation'
 })
+
+const handleImageError = (event) => {
+  event.target.src = ClassicAvatar
+}
 </script>
 
 <template>
@@ -98,7 +102,8 @@ const isOnModeration = computed(() => {
           <img 
             :src="author?.avatarUrl || ClassicAvatar" 
             alt="user" 
-            class="group__statusbar-user-logo">
+            class="group__statusbar-user-logo"
+            @error="handleImageError">
           <span class="group__statusbar-user-name">{{ author?.firstName || 'Аноним' }}</span>
         </div>
         <ul class="group__statusbar-status">
