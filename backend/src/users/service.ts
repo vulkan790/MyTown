@@ -14,6 +14,7 @@ import { createWriteStream } from 'fs';
 type RichUser = {
   id: number;
   email: string;
+  avatarUrl: string;
   firstName: string;
   lastName: string;
   middleName: string;
@@ -82,6 +83,7 @@ export const registerUserService = async (fastify: FastifyInstance) => {
 
     const userSelect = drizzle.with(problemsCTE).select({
       id: users.id,
+      avatarUrl: users.avatarUrl,
       email: users.email,
       firstName: users.firstName,
       lastName: users.lastName,
@@ -124,6 +126,7 @@ export const registerUserService = async (fastify: FastifyInstance) => {
 
     const richUser = {
       ...user,
+      avatarUrl: user.avatarUrl ?? '',
       problems: (user.problems ?? []).map((problem) => ({
         ...problem,
         images: problem.images ?? [],

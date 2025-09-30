@@ -18,6 +18,7 @@ const User = Type.Object({
   id: Type.Number(),
   email: Type.String(),
 
+  avatarUrl: Type.String(),
   firstName: Type.String(),
   lastName: Type.String(),
   middleName: Type.String(),

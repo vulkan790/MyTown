@@ -266,6 +266,7 @@ query (всё, что идет после вопроса в конце URL), pat
   "id": 123,
   "email": "mail@mail.ru",
 
+  "avatarUrl": "/uploads/xxx.png",
   "firstName": "Борис",
   "lastName": "Шевцев",
   "middleName": "",
