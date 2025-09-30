@@ -79,8 +79,21 @@ const isOnModeration = computed(() => {
   return props.status === 'on_moderation'
 })
 
-const handleImageError = (event) => {
-  event.target.src = ClassicAvatar
+const getAvatarUrl = (author) => {
+  if (!author?.avatarUrl)
+   return ClassicAvatar
+  
+  if (author.avatarUrl.startsWith('/'))
+    return `${import.meta.env.VITE_API_URL || ''}${author.avatarUrl}`
+  
+  return author.avatarUrl
+}
+
+const handleImageError = (event, type = 'avatar') => {
+  if (type === 'avatar')
+    event.target.src = ClassicAvatar
+  else 
+    event.target.style.display = 'none'
 }
 </script>
 
@@ -100,10 +113,10 @@ const handleImageError = (event) => {
       <div class="group__statusbar">
         <div class="group__statusbar-user">
           <img 
-            :src="author?.avatarUrl || ClassicAvatar" 
+            :src="getAvatarUrl(author)" 
             alt="user" 
             class="group__statusbar-user-logo"
-            @error="handleImageError">
+            @error="(e) => handleImageError(e, 'avatar')">
           <span class="group__statusbar-user-name">{{ author?.firstName || 'Аноним' }}</span>
         </div>
         <ul class="group__statusbar-status">
@@ -118,6 +131,7 @@ const handleImageError = (event) => {
       :src="images[0]" 
       :alt="title" 
       class="group__img"
+      @error="(e) => handleImageError(e, 'problem')"
     >
   </div>
 </template>

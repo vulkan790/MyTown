@@ -121,6 +121,19 @@ const handleAddComment = () => {
   commentMutation.mutate()
 }
 
+const getAvatarUrl = (avatarUrl) => {
+  if (!avatarUrl)
+   return fallbackAvatar
+  if (avatarUrl.startsWith('/'))
+    return `${import.meta.env.VITE_API_URL || ''}${avatarUrl}`
+  
+  return avatarUrl
+}
+
+const handleImageError = (event) => {
+  event.target.src = fallbackAvatar
+}
+
 const canModerate = computed(() => {
   return userStore.isLoggedIn && ['admin', 'mod'].includes(userStore.user?.role)
 })
@@ -181,7 +194,7 @@ const isNoActive = computed(() => {
   <main class="main-problem">
     <div class="container">
       <template v-if="isPending">
-        <div class="loading">Загрузка проблемы...</div>
+        <div class="loading">Загрузки проблемы...</div>
       </template>
       
       <template v-else-if="isError">
@@ -198,15 +211,16 @@ const isNoActive = computed(() => {
                   :key="index" 
                   :src="image" 
                   :alt="'Изображение ' + (index + 1)" 
-                  class="problem-image">
+                  class="problem-image"
+                  @error="handleImageError">
               </div>
               
               <div class="author-block">
                 <img 
-                  :src="problem.author?.avatarUrl || fallbackAvatar" 
+                  :src="getAvatarUrl(problem.author?.avatarUrl)" 
                   class="author-avatar" 
                   alt="Аватар"
-                  @error="(e) => e.target.src = fallbackAvatar">
+                  @error="handleImageError">
                 <div class="author-info">
                   <h3 class="author-name">
                     {{ problem.author?.firstName || 'Аноним' }} 
@@ -301,10 +315,10 @@ const isNoActive = computed(() => {
                 <div class="comment-header">
                   <div class="comment-author-avatar-container">
                     <img 
-                      :src="comment.author?.avatarUrl || fallbackAvatar" 
+                      :src="getAvatarUrl(comment.author?.avatarUrl)" 
                       class="comment-author-avatar"
                       alt="Аватар"
-                      @error="(e) => e.target.src = fallbackAvatar">
+                      @error="handleImageError">
                   </div>
                   <div class="comment-author-info">
                     <span class="comment-author">
@@ -322,10 +336,10 @@ const isNoActive = computed(() => {
             <div v-if="canComment" class="mynic-comment-box">
               <div class="comment-avatar-container">
                 <img 
-                  :src="userStore.user?.avatarUrl || fallbackAvatar" 
+                  :src="getAvatarUrl(userStore.user?.avatarUrl)" 
                   class="comment-author-avatar"
                   alt="Аватар"
-                  @error="(e) => e.target.src = fallbackAvatar">
+                  @error="handleImageError">
               </div>
               <div class="comment-input-wrapper">
                 <div class="comment-input-container">
@@ -556,7 +570,6 @@ const isNoActive = computed(() => {
 .voting-closed-message {
   text-align: center;
   padding: 20px;
-  background-color: #f8f9fa;
   border-radius: 8px;
   margin: 20px 0;
 }

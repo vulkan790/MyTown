@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useUser } from '@/api/useUser'
 import AppHeader from '@/components/AppHeader.vue'
 import ProblemInfo from '@/components/ProblemCard.vue'
-import { api } from '@/api/client'
+import { uploadUserAvatar } from '@/api/client'
 
 const { user, refetch } = storeToRefs(useUser())
 const fileInput = ref(null)
@@ -20,8 +20,34 @@ const solvedProblems = computed(() => {
   return user.value.problems.filter(problem => problem.status === 'solved')
 })
 
+const allProblems = computed(() => {
+  if (!user.value?.problems) return []
+  return user.value.problems
+})
+
+const solvingProblems = computed(() => {
+  if (!user.value?.problems) return []
+  return user.value.problems.filter(problem => problem.status === 'solving')
+})
+
+const solvedProblemsCount = computed(() => solvedProblems.value.length)
+
+const totalProblemsCount = computed(() => allProblems.value.length)
+
+const solvingProblemsCount = computed(() => solvingProblems.value.length)
+
+const getAvatarUrl = (avatarUrl) => {
+  if (!avatarUrl)
+   return new URL('@/images/Profile.svg', import.meta.url).href
+  
+  if (avatarUrl.startsWith('/'))
+    return `${import.meta.env.VITE_API_URL || ''}${avatarUrl}`
+  
+  return avatarUrl
+}
+
 const handleImageError = (event) => {
-  event.target.src = '@/images/Profile.svg'
+  event.target.src = new URL('@/images/Profile.svg', import.meta.url).href
 }
 
 const triggerFileInput = () => {
@@ -32,10 +58,10 @@ const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) 
     return
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
   if (!allowedTypes.includes(file.type)) 
   {
-    uploadError.value = 'Пожалуйста, выберите изображение в формате JPG, JPEG или PNG'
+    uploadError.value = 'Пожалуйста, выберите изображение в формате JPG, JPEG, PNG или WEBP'
     return
   }
   if (file.size > 5 * 1024 * 1024) 
@@ -49,24 +75,15 @@ const handleFileUpload = async (event) => {
   {
     const formData = new FormData()
     formData.append('file', file)
-    const response = await api.post('users/me/avatar', {
-      body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    if (response.status === 201) 
-    {
-      const data = await response.json()
-      if (user.value) 
-        user.value.avatarUrl = data.avatarUrl
-      await refetch.value()
-      if (fileInput.value)
-        fileInput.value.value = ''
-      alert('Аватар успешно обновлен!')
-    } 
-    else
-      throw new Error('Ошибка загрузки файла')
+    
+    const result = await uploadUserAvatar(formData)
+    
+    if (user.value) 
+      user.value.avatarUrl = result.avatarUrl
+    await refetch.value()
+    if (fileInput.value)
+      fileInput.value.value = ''
+    alert('Аватар успешно обновлен!')
   } 
   catch (error) 
   {
@@ -79,7 +96,7 @@ const handleFileUpload = async (event) => {
         if (errorData.error === 'too_large_file')
           uploadError.value = 'Файл слишком большой (максимум 5MB)'
         else
-          uploadError.value = 'Неверный формат файла. Разрешены только JPG, JPEG, PNG'
+          uploadError.value = 'Неверный формат файла. Разрешены только JPG, JPEG, PNG, WEBP'
       }
       else if (error.response.status === 401)
         uploadError.value = 'Требуется авторизация'
@@ -87,7 +104,7 @@ const handleFileUpload = async (event) => {
         uploadError.value = 'Ошибка загрузки файла'
     } 
     else
-      uploadError.value = 'Ошибка загрузки файла'
+      uploadError.value = error.message || 'Ошибка загрузки файла'
   } 
   finally 
   {
@@ -109,7 +126,7 @@ const handleFileUpload = async (event) => {
               <div class="avatar-container">
                 <img 
                   v-if="user?.avatarUrl"
-                  :src="user.avatarUrl"
+                  :src="getAvatarUrl(user.avatarUrl)"
                   alt="Profile"
                   class="user-logo"
                   @error="handleImageError">
@@ -127,7 +144,7 @@ const handleFileUpload = async (event) => {
               <input
                 ref="fileInput"
                 type="file"
-                accept=".jpg,.jpeg,.png"
+                accept=".jpg,.jpeg,.png,.webp"
                 @change="handleFileUpload"
                 class="file-input"
                 hidden>
@@ -137,7 +154,7 @@ const handleFileUpload = async (event) => {
                 :disabled="isUploading">
                 {{ isUploading ? 'Загрузка...' : 'Добавить/Изменить фото' }}
               </button>
-              <div class="file-formats">Допустимые форматы: JPG, JPEG, PNG (макс. 5MB)</div>
+              <div class="file-formats">Допустимые форматы: JPG, JPEG, PNG, WEBP (макс. 5MB)</div>
               <div v-if="uploadError" class="upload-error">
                 {{ uploadError }}
               </div>
@@ -153,12 +170,12 @@ const handleFileUpload = async (event) => {
               <div class="detail-value">Электронная почта: {{ user.email }}</div>
             </div>
             
-            <div class="detail-item" v-if="!isModOrAdmin">
-              <div class="detail-label">
-                {{ isGov ? 'Всего решённых проблем' : 'Всего отправленных проблем' }}
+            <div class="detail-item">
+              <div class="detail-label" v-if="!isGov">
+                Всего отправленных проблем
               </div>
-              <div class="problem-count">
-                {{ isGov ? solvedProblems.length : user.problems?.length || 0 }}
+              <div class="problem-count" v-if="!isGov">
+                {{ user.problems?.length || 0 }}
               </div>
             </div>
           </div>
@@ -175,7 +192,7 @@ const handleFileUpload = async (event) => {
           v-if="!isModOrAdmin"
           class="problems-section">
           <h2 class="section-title">
-            {{ isGov ? "Все решённые проблемы пользователя" : "Все проблемы пользователя" }}
+            Все проблемы пользователя
           </h2>
           
           <ul class="all__problems-list">

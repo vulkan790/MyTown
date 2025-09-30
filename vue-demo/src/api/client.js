@@ -414,3 +414,17 @@ export const uploadUserAvatar = async (formData) => {
     throw error;
   }
 }
+
+/**
+ * Получить полный URL для ресурса
+ * @param {string} url - относительный или абсолютный URL
+ * @returns {string}
+ */
+export const getFullUrl = (url) => {
+  if (!url)
+    return ''
+  if (url.startsWith('http') || url.startsWith('//'))
+    return url
+  const baseUrl = import.meta.env.VITE_API_URL || ''
+  return `${baseUrl}${url.startsWith('/') ? url : '/' + url}`
+}
