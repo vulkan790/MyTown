@@ -274,7 +274,10 @@ const mapUrl = computed(() => {
                 <div class="problem__status">
                   <div class="votes-counter">
                     <span class="votes-label">Голосов:</span>
-                    <span class="votes-number" :class="{ positive: totalVotes > 0, negative: totalVotes < 0 }">
+                    <span class="votes-number" :class="{
+                      'positive': totalVotes > 0,
+                      'negative': totalVotes < 0
+                    }">
                       {{ totalVotes }}
                     </span>
                   </div>
@@ -298,7 +301,7 @@ const mapUrl = computed(() => {
                 <p>Проблема решена. Голосование больше недоступно.</p>
                 <div class="final-votes">
                   <span class="votes-label">Итоговое количество голосов:</span>
-                  <span class="votes-number" :class="{ positive: totalVotes > 0, negative: totalVotes < 0 }">
+                  <span class="votes-number">
                     {{ totalVotes }}
                   </span>
                 </div>
@@ -420,42 +423,6 @@ const mapUrl = computed(() => {
 .right-column {
   flex: 1;
   min-width: 300px;
-}
-
-.map-block {
-  position: relative;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.problem-map {
-  width: 100%;
-  height: 300px;
-  object-fit: cover;
-  display: block;
-}
-
-.map-overlay {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-}
-
-.map-link {
-  background: rgba(255, 255, 255, 0.9);
-  padding: 8px 12px;
-  border-radius: 4px;
-  text-decoration: none;
-  color: #000;
-  font-size: 12px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.map-link:hover {
-  background: rgba(255, 255, 255, 1);
 }
 
 .images-block {

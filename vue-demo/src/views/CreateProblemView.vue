@@ -47,6 +47,14 @@ const mapPreviewUrl = computed(() => {
   return ''
 })
 
+const isValidAddress = computed(() => {
+  return form.value.addressUri && form.value.addressDisplay
+})
+
+const hasAddressInput = computed(() => {
+  return form.value.addressDisplay && !form.value.addressUri
+})
+
 const handleFileUpload = (event) => {
   if (!isLoggedIn.value) {
     router.replace('/login')
@@ -163,6 +171,7 @@ const selectAddress = (suggestion) => {
   form.value.addressDisplay = suggestion.title 
   form.value.addressUri = suggestion.uri
   showSuggestions.value = false
+  errorMessage.value = '' 
 }
 
 const onClickOutside = (e) => {
@@ -276,7 +285,7 @@ const handleSubmit = async () => {
                 </li>
               </ul>
               
-              <div v-else-if="form.addressDisplay" class="address-warning">
+              <div v-if="hasAddressInput && !showSuggestions && !isValidAddress" class="address-warning">
                 Выберите адрес из списка
               </div>
 
@@ -410,8 +419,7 @@ textarea {
   color: #666;
   font-size: 14px;
   text-align: center;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
+  background: #D3DEF2;
   border-top: none;
 }
 
@@ -420,8 +428,7 @@ textarea {
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #ddd;
+  background: #D3DEF2;
   border-top: none;
   border-radius: 0 0 4px 4px;
   max-height: 200px;
