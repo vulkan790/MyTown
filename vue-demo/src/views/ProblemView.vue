@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem, updateProblemStatus } from '@/api/client'
+import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem, updateProblemStatus, getStaticMapUrl } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
 import { useQuery, useMutation } from '@tanstack/vue-query'
 import { useUser } from '@/api/useUser'
@@ -134,6 +134,11 @@ const handleImageError = (event) => {
   event.target.src = fallbackAvatar
 }
 
+const handleMapError = (event) => {
+  console.error('Error loading map image')
+  event.target.style.display = 'none'
+}
+
 const canModerate = computed(() => {
   return userStore.isLoggedIn && ['admin', 'mod'].includes(userStore.user?.role)
 })
@@ -186,6 +191,13 @@ const isYesActive = computed(() => {
 const isNoActive = computed(() => {
   return userVote.value === -1
 })
+
+const mapUrl = computed(() => {
+  if (problem.value?.address) {
+    return getStaticMapUrl(problem.value.address, 600, 300, 15)
+  }
+  return ''
+})
 </script>
 
 <template>
@@ -205,6 +217,22 @@ const isNoActive = computed(() => {
         <div class="problem-page">
           <div class="problem-layout">
             <div class="left-column">
+              <div class="map-block" v-if="mapUrl">
+                <img 
+                  :src="mapUrl" 
+                  :alt="'Карта: ' + problem.address"
+                  class="problem-map"
+                  @error="handleMapError"
+                />
+                <div class="map-overlay">
+                  <a :href="`https://yandex.ru/maps/?text=${encodeURIComponent(problem.address)}`" 
+                     target="_blank" 
+                     class="map-link">
+                    Открыть в Яндекс Картах
+                  </a>
+                </div>
+              </div>
+              
               <div v-if="problem.images && problem.images.length" class="images-block">
                 <img 
                   v-for="(image, index) in problem.images" 
@@ -392,6 +420,42 @@ const isNoActive = computed(() => {
 .right-column {
   flex: 1;
   min-width: 300px;
+}
+
+.map-block {
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.problem-map {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.map-overlay {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+
+.map-link {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #000;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.map-link:hover {
+  background: rgba(255, 255, 255, 1);
 }
 
 .images-block {

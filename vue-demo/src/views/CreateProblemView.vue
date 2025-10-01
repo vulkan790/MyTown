@@ -1,11 +1,10 @@
 <script setup>
-
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuth } from '@/api/useAuth'
 import { useUser } from '@/api/useUser'
-import { createProblem, uploadProblemImage, getAddressSuggestions } from '@/api/client'
+import { createProblem, uploadProblemImage, getAddressSuggestions, getStaticMapUrl } from '@/api/client'
 import { debounce } from 'lodash-es'
 import AppHeader from '@/components/AppHeader.vue'
 
@@ -40,6 +39,13 @@ const showLoading = ref(false)
 const MAX_FILE_COUNT = 5
 const MAX_TOTAL_SIZE_MB = 20
 const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
+
+const mapPreviewUrl = computed(() => {
+  if (form.value.addressUri) {
+    return getStaticMapUrl(form.value.addressUri, 400, 200, 15)
+  }
+  return ''
+})
 
 const handleFileUpload = (event) => {
   if (!isLoggedIn.value) {
@@ -273,6 +279,17 @@ const handleSubmit = async () => {
               <div v-else-if="form.addressDisplay" class="address-warning">
                 Выберите адрес из списка
               </div>
+
+              <div v-if="mapPreviewUrl" class="map-preview">
+                <img 
+                  :src="mapPreviewUrl" 
+                  alt="Предпросмотр карты"
+                  class="preview-map"
+                />
+                <div class="preview-overlay">
+                  <span>Предпросмотр местоположения</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -333,5 +350,243 @@ const handleSubmit = async () => {
       </div>
     </div>
   </main>
-
 </template>
+
+<style scoped>
+.report-section {
+  border-radius: 16px;
+  padding: 40px;
+  margin: 40px auto;
+  max-width: 800px;
+}
+
+.report-section h1 {
+  font-size: 32px;
+  color: #2C2D2E;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.form-message {
+  text-align: center;
+  color: #2C2D2E;
+  margin-bottom: 32px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #000000;
+  font-size: 24px;
+  text-align: center;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 14px 16px;
+  background-color: white;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.address-autocomplete {
+  position: relative;
+}
+
+.loading-indicator {
+  padding: 10px;
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-top: none;
+}
+
+.suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestion-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 24px;
+}
+
+.suggestion-item:hover {
+  background: #f5f5f5;
+  text-decoration: underline;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item strong {
+  color: #000;
+  font-size: 14px;
+}
+
+.suggestion-item small {
+  color: #666;
+  font-size: 12px;
+}
+
+.address-warning {
+  padding: 8px 0;
+  color: #f44336;
+  font-size: 12px;
+}
+
+.map-preview {
+  position: relative;
+  margin-top: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-map {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #000;
+}
+
+.file-upload-group {
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: black;
+  background-color: transparent;
+  font-size: 24px;
+  text-align: center;
+}
+
+.file-input-wrapper {
+  margin-bottom: 24px;
+  margin-top: 8px;
+  width: 730px;
+  height: 369px;
+  border: 2px dashed black;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  position: relative;
+}
+
+.file-list {
+  margin-top: 10px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: red;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.upload-btn {
+  background: #3786BE;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+  font-size: 16px;
+  border: none;
+}
+
+.upload-btn:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  opacity: 0.9;
+}
+
+.file-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: black;
+  margin-top: 4px;
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 5px;
+  display: block;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.submit-button {
+  background: #3786BE;
+  color: #FFFFFF;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  opacity: 0.9;
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>

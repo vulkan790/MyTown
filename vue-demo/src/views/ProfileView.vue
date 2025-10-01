@@ -58,29 +58,32 @@ const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) 
     return
+  
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
   if (!allowedTypes.includes(file.type)) 
   {
     uploadError.value = 'Пожалуйста, выберите изображение в формате JPG, JPEG, PNG или WEBP'
     return
   }
+  
   if (file.size > 5 * 1024 * 1024) 
   {
     uploadError.value = 'Файл слишком большой (максимум 5MB)'
     return
   }
+  
   isUploading.value = true
   uploadError.value = null
+  
   try 
   {
     const formData = new FormData()
     formData.append('file', file)
-    
     const result = await uploadUserAvatar(formData)
-    
-    if (user.value) 
+    if (user.value)
       user.value.avatarUrl = result.avatarUrl
-    await refetch.value()
+    if (refetch.value)
+      await refetch.value()
     if (fileInput.value)
       fileInput.value.value = ''
     alert('Аватар успешно обновлен!')
@@ -88,21 +91,13 @@ const handleFileUpload = async (event) => {
   catch (error) 
   {
     console.error('Ошибка загрузки аватара:', error)
-    if (error.response) 
-    {
-      const errorData = await error.response.json()
-      if (error.response.status === 400) 
-      {
-        if (errorData.error === 'too_large_file')
-          uploadError.value = 'Файл слишком большой (максимум 5MB)'
-        else
-          uploadError.value = 'Неверный формат файла. Разрешены только JPG, JPEG, PNG, WEBP'
-      }
-      else if (error.response.status === 401)
-        uploadError.value = 'Требуется авторизация'
-      else
-        uploadError.value = 'Ошибка загрузки файла'
-    } 
+    
+    if (error.message === 'Authorization required')
+      uploadError.value = 'Требуется авторизация'
+    else if (error.message.includes('too_large_file'))
+      uploadError.value = 'Файл слишком большой (максимум 5MB)'
+    else if (error.message.includes('Invalid file format'))
+      uploadError.value = 'Неверный формат файла. Разрешены только JPG, JPEG, PNG, WEBP'
     else
       uploadError.value = error.message || 'Ошибка загрузки файла'
   } 
@@ -224,6 +219,7 @@ const handleFileUpload = async (event) => {
   border: 3px solid #f0f0f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  background: #f8f9fa;
 }
 
 .user-logo {
@@ -233,9 +229,12 @@ const handleFileUpload = async (event) => {
 }
 
 .default-avatar {
-  padding: 20px;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+  padding: 0;
   background: #f8f9fa;
+  box-sizing: border-box;
 }
 
 .upload-overlay {
