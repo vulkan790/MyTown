@@ -59,6 +59,25 @@ const statusMutation = useMutation({
   }
 })
 
+const openYandexMaps = () => {
+  if (!problem.value?.address) return
+  
+  const encodedAddress = encodeURIComponent(problem.value.address)
+  window.open(`https://yandex.ru/maps/?text=${encodedAddress}`, '_blank')
+}
+
+const openMapModal = () => {
+  if (!problem.value?.address) {
+    alert('Адрес не указан')
+    return
+  }
+  showMapModal.value = true
+}
+
+const closeMapModal = () => {
+  showMapModal.value = false
+}
+
 const statusNames = {
   'wait_for_solve': 'В ожидании решения',
   'solving': 'В процессе решения',
@@ -136,11 +155,6 @@ const handleImageError = (event) => {
   event.target.src = fallbackAvatar
 }
 
-const handleMapError = (event) => {
-  console.error('Error loading map image')
-  event.target.style.display = 'none'
-}
-
 const nextImage = () => {
   if (problem.value?.images && problem.value.images.length > 1)
     currentImageIndex.value = (currentImageIndex.value + 1) % problem.value.images.length
@@ -153,14 +167,6 @@ const prevImage = () => {
 
 const goToImage = (index) => {
   currentImageIndex.value = index
-}
-
-const openMapModal = () => {
-  showMapModal.value = true
-}
-
-const closeMapModal = () => {
-  showMapModal.value = false
 }
 
 const canModerate = computed(() => {
@@ -216,18 +222,6 @@ const isNoActive = computed(() => {
   return userVote.value === -1
 })
 
-const mapUrl = computed(() => {
-  if (problem.value?.address)
-    return getStaticMapUrl(problem.value.address, 600, 300, 15)
-  return ''
-})
-
-const largeMapUrl = computed(() => {
-  if (problem.value?.address)
-    return getStaticMapUrl(problem.value.address, 800, 600, 16)
-  return ''
-})
-
 const currentImage = computed(() => {
   if (problem.value?.images && problem.value.images.length > 0)
     return problem.value.images[currentImageIndex.value]
@@ -256,22 +250,23 @@ const hasMultipleImages = computed(() => {
         <div class="problem-page">
           <div class="problem-layout">
             <div class="left-column">
-              <div class="map-block" v-if="mapUrl">
-                <img 
-                  :src="mapUrl" 
-                  :alt="'Карта: ' + problem.address"
-                  class="problem-map"
-                  @error="handleMapError"
-                />
+              <div class="map-block" v-if="problem?.address">
+                <div class="map-preview">
+                  <iframe
+                    :src="`https://yandex.ru/map-widget/v1/?text=${encodeURIComponent(problem.address)}`"
+                    width="100%"
+                    height="200"
+                    frameborder="0"
+                    class="map-preview-iframe"
+                  ></iframe>
+                </div>
                 <div class="map-overlay">
                   <button @click="openMapModal" class="map-link">
                     Показать на карте
                   </button>
-                  <a :href="`https://yandex.ru/maps/?text=${encodeURIComponent(problem.address)}`" 
-                     target="_blank" 
-                     class="map-link">
+                  <button @click="openYandexMaps" class="map-link">
                     Открыть в Яндекс Картах
-                  </a>
+                  </button>
                 </div>
               </div>
               
@@ -321,7 +316,12 @@ const hasMultipleImages = computed(() => {
 
             <div class="right-column">
               <h2 class="title-address">Адрес</h2>
-              <p class="text-address">{{ problem.address }}</p>
+              <div class="address-with-map">
+                <p class="text-address">{{ problem.address }}</p>
+                <button @click="openMapModal" class="show-map-btn">
+                  Показать на карте
+                </button>
+              </div>
 
               <h2 class="title-address">Описание</h2>
               <p class="text-address">{{ problem.description }}</p>
@@ -464,24 +464,21 @@ const hasMultipleImages = computed(() => {
           <button class="modal-close" @click="closeMapModal">×</button>
         </div>
         <div class="modal-body">
-          <img 
-            v-if="largeMapUrl"
-            :src="largeMapUrl" 
-            :alt="'Карта: ' + problem?.address"
-            class="modal-map-image"
-            @error="handleMapError"
-          />
+          <iframe
+            v-if="problem?.address"
+            :src="`https://yandex.ru/map-widget/v1/?text=${encodeURIComponent(problem.address)}`"
+            width="100%"
+            height="400"
+            frameborder="0"
+            class="yandex-map-iframe"
+          ></iframe>
           <div v-else class="map-error">
-            Не удалось загрузить карту
+            Адрес не указан
           </div>
           <div class="modal-actions">
-            <a 
-              v-if="problem?.address"
-              :href="`https://yandex.ru/maps/?text=${encodeURIComponent(problem.address)}`" 
-              target="_blank" 
-              class="btn-external-map">
+            <button @click="openYandexMaps" class="btn-external-map">
               Открыть в Яндекс Картах
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -510,6 +507,67 @@ const hasMultipleImages = computed(() => {
 .right-column {
   flex: 1;
   min-width: 300px;
+}
+
+/* Стили для блока адреса с кнопкой */
+.address-with-map {
+  margin-bottom: 20px;
+}
+
+.show-map-btn {
+  padding: 8px 16px;
+  background-color: #2c6c9a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 8px;
+  transition: background-color 0.2s;
+}
+
+.show-map-btn:hover {
+  background-color: #1d4e6f;
+}
+
+.map-block {
+  margin-bottom: 20px;
+}
+
+.map-preview {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.map-preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.map-overlay {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.map-link {
+  padding: 6px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: none;
+  color: #333;
+  transition: background-color 0.2s;
+}
+
+.map-link:hover {
+  background-color: #e0e0e0;
 }
 
 .images-block {
@@ -658,9 +716,11 @@ const hasMultipleImages = computed(() => {
 
 .text-address {
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   line-height: 1.5;
   color: #000;
+  font-size: 16px;
+  padding: 8px 0;
 }
 
 .question-problem {
@@ -1028,7 +1088,7 @@ const hasMultipleImages = computed(() => {
 .modal-content {
   background: white;
   border-radius: 8px;
-  max-width: 900px;
+  max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
@@ -1071,11 +1131,10 @@ const hasMultipleImages = computed(() => {
   flex-direction: column;
 }
 
-.modal-map-image {
+.yandex-map-iframe {
   width: 100%;
-  height: auto;
-  max-height: 70vh;
-  object-fit: contain;
+  height: 400px;
+  border: none;
 }
 
 .map-error {
@@ -1098,6 +1157,9 @@ const hasMultipleImages = computed(() => {
   text-decoration: none;
   border-radius: 4px;
   transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
 }
 
 .btn-external-map:hover {
