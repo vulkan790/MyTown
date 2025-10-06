@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem, updateProblemStatus, getStaticMapUrl } from '@/api/client'
+import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem, updateProblemStatus, getStaticMapForAddress } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
 import { useQuery, useMutation } from '@tanstack/vue-query'
 import { useUser } from '@/api/useUser'
@@ -60,10 +60,25 @@ const statusMutation = useMutation({
 })
 
 const openYandexMaps = () => {
-  if (!problem.value?.address) return
+  if (!problem.value?.address) {
+    alert('Адрес не указан')
+    return
+  }
   
   const encodedAddress = encodeURIComponent(problem.value.address)
   window.open(`https://yandex.ru/maps/?text=${encodedAddress}`, '_blank')
+}
+
+const getMapUrl = () => {
+  if (!problem.value?.address) return ''
+  
+  const encodedAddress = encodeURIComponent(problem.value.address)
+  return `https://yandex.ru/map-widget/v1/?text=${encodedAddress}`
+}
+
+const getStaticMapImageUrl = () => {
+  if (!problem.value?.address) return ''
+  return getStaticMapForAddress(problem.value.address, 600, 200, 15)
 }
 
 const openMapModal = () => {
@@ -231,6 +246,18 @@ const currentImage = computed(() => {
 const hasMultipleImages = computed(() => {
   return problem.value?.images && problem.value.images.length > 1
 })
+
+const mapUrl = computed(() => {
+  return getMapUrl()
+})
+
+const staticMapImageUrl = computed(() => {
+  return getStaticMapImageUrl()
+})
+
+const hasAddress = computed(() => {
+  return problem.value?.address && problem.value.address.trim() !== ''
+})
 </script>
 
 <template>
@@ -239,7 +266,7 @@ const hasMultipleImages = computed(() => {
   <main class="main-problem">
     <div class="container">
       <template v-if="isPending">
-        <div class="loading">Загрузки проблемы...</div>
+        <div class="loading">Загрузка проблемы...</div>
       </template>
       
       <template v-else-if="isError">
@@ -250,15 +277,18 @@ const hasMultipleImages = computed(() => {
         <div class="problem-page">
           <div class="problem-layout">
             <div class="left-column">
-              <div class="map-block" v-if="problem?.address">
+              <div class="map-block" v-if="hasAddress">
                 <div class="map-preview">
-                  <iframe
-                    :src="`https://yandex.ru/map-widget/v1/?text=${encodeURIComponent(problem.address)}`"
-                    width="100%"
-                    height="200"
-                    frameborder="0"
-                    class="map-preview-iframe"
-                  ></iframe>
+                  <img
+                    v-if="staticMapImageUrl"
+                    :src="staticMapImageUrl"
+                    :alt="'Карта: ' + problem.address"
+                    class="static-map-image"
+                    @click="openMapModal"
+                  />
+                  <div v-else class="map-placeholder">
+                    Карта недоступна
+                  </div>
                 </div>
                 <div class="map-overlay">
                   <button @click="openMapModal" class="map-link">
@@ -268,6 +298,10 @@ const hasMultipleImages = computed(() => {
                     Открыть в Яндекс Картах
                   </button>
                 </div>
+              </div>
+
+              <div v-else class="no-map-block">
+                <p>Адрес не указан</p>
               </div>
               
               <div v-if="problem.images && problem.images.length" class="images-block">
@@ -317,9 +351,18 @@ const hasMultipleImages = computed(() => {
             <div class="right-column">
               <h2 class="title-address">Адрес</h2>
               <div class="address-with-map">
-                <p class="text-address">{{ problem.address }}</p>
-                <button @click="openMapModal" class="show-map-btn">
+                <p class="text-address">{{ problem.address || 'Адрес не указан' }}</p>
+                <button 
+                  v-if="hasAddress" 
+                  @click="openMapModal" 
+                  class="show-map-btn">
                   Показать на карте
+                </button>
+                <button 
+                  v-else 
+                  disabled 
+                  class="show-map-btn disabled">
+                  Адрес не указан
                 </button>
               </div>
 
@@ -465,18 +508,22 @@ const hasMultipleImages = computed(() => {
         </div>
         <div class="modal-body">
           <iframe
-            v-if="problem?.address"
-            :src="`https://yandex.ru/map-widget/v1/?text=${encodeURIComponent(problem.address)}`"
+            v-if="hasAddress"
+            :src="mapUrl"
             width="100%"
             height="400"
             frameborder="0"
             class="yandex-map-iframe"
+            :title="'Карта: ' + problem?.address"
           ></iframe>
           <div v-else class="map-error">
             Адрес не указан
           </div>
           <div class="modal-actions">
-            <button @click="openYandexMaps" class="btn-external-map">
+            <button 
+              v-if="hasAddress" 
+              @click="openYandexMaps" 
+              class="btn-external-map">
               Открыть в Яндекс Картах
             </button>
           </div>
@@ -509,7 +556,6 @@ const hasMultipleImages = computed(() => {
   min-width: 300px;
 }
 
-/* Стили для блока адреса с кнопкой */
 .address-with-map {
   margin-bottom: 20px;
 }
@@ -530,6 +576,24 @@ const hasMultipleImages = computed(() => {
   background-color: #1d4e6f;
 }
 
+.show-map-btn.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.show-map-btn.disabled:hover {
+  background-color: #ccc;
+}
+
+.no-map-block {
+  padding: 20px;
+  text-align: center;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  color: #666;
+}
+
 .map-block {
   margin-bottom: 20px;
 }
@@ -540,12 +604,24 @@ const hasMultipleImages = computed(() => {
   border-radius: 8px;
   overflow: hidden;
   margin-bottom: 10px;
+  cursor: pointer;
 }
 
-.map-preview-iframe {
+.static-map-image {
   width: 100%;
   height: 100%;
+  object-fit: cover;
   border: none;
+}
+
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  color: #666;
 }
 
 .map-overlay {
