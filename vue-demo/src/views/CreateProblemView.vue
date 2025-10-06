@@ -36,9 +36,12 @@ const addressSuggestions = ref([])
 const showSuggestions = ref(false)
 const showLoading = ref(false)
 
-const MAX_FILE_COUNT = 5
-const MAX_TOTAL_SIZE_MB = 20
+const MAX_FILE_COUNT = 10
+const MAX_TOTAL_SIZE_MB = 100
 const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
+
+const MAX_SINGLE_FILE_SIZE_MB = 50
+const MAX_SINGLE_FILE_SIZE_BYTES = MAX_SINGLE_FILE_SIZE_MB * 1024 * 1024
 
 const isValidAddress = computed(() => {
   return form.value.addressUri && form.value.addressDisplay
@@ -64,6 +67,15 @@ const handleFileUpload = (event) => {
     return
   }
 
+  const oversizedFiles = newFiles.filter(file => file.size > MAX_SINGLE_FILE_SIZE_BYTES)
+  if (oversizedFiles.length > 0) 
+  {
+    const oversizedNames = oversizedFiles.map(f => f.name).join(', ')
+    errorMessage.value = `Следующие файлы превышают максимальный размер ${MAX_SINGLE_FILE_SIZE_MB}MB: ${oversizedNames}`
+    event.target.value = ''
+    return
+  }
+
   const totalSize = [...files.value, ...newFiles].reduce((acc, file) => acc + file.size, 0)
   if (totalSize > MAX_TOTAL_SIZE_BYTES) 
   {
@@ -76,9 +88,12 @@ const handleFileUpload = (event) => {
     'image/jpeg',
     'image/jpg',
     'image/png',
+    'image/gif',
     'video/mp4',
     'video/avi',
-    'video/quicktime'
+    'video/quicktime',
+    'video/mov',
+    'video/webm'
   ]
   
   const invalidFiles = newFiles.filter(file => !validTypes.includes(file.type))
@@ -332,8 +347,9 @@ const handleSubmit = async () => {
                 </div>
               </div>
               <div class="file-requirements">
-                <span>Допустимые форматы: PNG, JPEG, MP4, AVI</span>
-                <span>Максимум: {{ MAX_FILE_COUNT }} файлов ({{ MAX_TOTAL_SIZE_MB }}MB)</span>
+                <span>Допустимые форматы: PNG, JPEG, WebP, GIF, MP4, AVI, MOV, WebM</span>
+                <span>Максимум: {{ MAX_FILE_COUNT }} файлов (общий размер до {{ MAX_TOTAL_SIZE_MB }}MB)</span>
+                <span>Максимальный размер одного файла: {{ MAX_SINGLE_FILE_SIZE_MB }}MB</span>
               </div>
             </div>
           </div>
@@ -543,6 +559,7 @@ textarea {
   font-size: 12px;
   color: black;
   margin-top: 4px;
+  text-align: center;
 }
 
 .error-message {
