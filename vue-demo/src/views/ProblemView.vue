@@ -12,6 +12,8 @@ const userStore = useUser()
 const problemId = ref(route.params.id)
 const voteValue = ref(0)
 const newComment = ref('')
+const currentImageIndex = ref(0) 
+const showMapModal = ref(false) 
 
 const {
   data: problem,
@@ -139,6 +141,28 @@ const handleMapError = (event) => {
   event.target.style.display = 'none'
 }
 
+const nextImage = () => {
+  if (problem.value?.images && problem.value.images.length > 1)
+    currentImageIndex.value = (currentImageIndex.value + 1) % problem.value.images.length
+}
+
+const prevImage = () => {
+  if (problem.value?.images && problem.value.images.length > 1)
+    currentImageIndex.value = (currentImageIndex.value - 1 + problem.value.images.length) % problem.value.images.length
+}
+
+const goToImage = (index) => {
+  currentImageIndex.value = index
+}
+
+const openMapModal = () => {
+  showMapModal.value = true
+}
+
+const closeMapModal = () => {
+  showMapModal.value = false
+}
+
 const canModerate = computed(() => {
   return userStore.isLoggedIn && ['admin', 'mod'].includes(userStore.user?.role)
 })
@@ -193,10 +217,25 @@ const isNoActive = computed(() => {
 })
 
 const mapUrl = computed(() => {
-  if (problem.value?.address) {
+  if (problem.value?.address)
     return getStaticMapUrl(problem.value.address, 600, 300, 15)
-  }
   return ''
+})
+
+const largeMapUrl = computed(() => {
+  if (problem.value?.address)
+    return getStaticMapUrl(problem.value.address, 800, 600, 16)
+  return ''
+})
+
+const currentImage = computed(() => {
+  if (problem.value?.images && problem.value.images.length > 0)
+    return problem.value.images[currentImageIndex.value]
+  return null
+})
+
+const hasMultipleImages = computed(() => {
+  return problem.value?.images && problem.value.images.length > 1
 })
 </script>
 
@@ -225,6 +264,9 @@ const mapUrl = computed(() => {
                   @error="handleMapError"
                 />
                 <div class="map-overlay">
+                  <button @click="openMapModal" class="map-link">
+                    Показать на карте
+                  </button>
                   <a :href="`https://yandex.ru/maps/?text=${encodeURIComponent(problem.address)}`" 
                      target="_blank" 
                      class="map-link">
@@ -234,13 +276,28 @@ const mapUrl = computed(() => {
               </div>
               
               <div v-if="problem.images && problem.images.length" class="images-block">
-                <img 
-                  v-for="(image, index) in problem.images" 
-                  :key="index" 
-                  :src="image" 
-                  :alt="'Изображение ' + (index + 1)" 
-                  class="problem-image"
-                  @error="handleImageError">
+                <div class="image-container">
+                  <img 
+                    :src="currentImage" 
+                    :alt="'Изображение ' + (currentImageIndex + 1)" 
+                    class="problem-image"
+                    @error="handleImageError">
+                  
+                  <div v-if="hasMultipleImages" class="image-navigation">
+                    <button @click="prevImage" class="nav-button prev-button">‹</button>
+                    <button @click="nextImage" class="nav-button next-button">›</button>
+                  </div>
+                </div>
+                
+                <div v-if="hasMultipleImages" class="image-indicators">
+                  <button
+                    v-for="(image, index) in problem.images"
+                    :key="index"
+                    @click="goToImage(index)"
+                    :class="['indicator', { active: index === currentImageIndex }]"
+                    :aria-label="'Перейти к изображению ' + (index + 1)"
+                  ></button>
+                </div>
               </div>
               
               <div class="author-block">
@@ -399,6 +456,36 @@ const mapUrl = computed(() => {
         <div class="not-found">Проблема не найдена</div>
       </template>
     </div>
+
+    <div v-if="showMapModal" class="modal-overlay" @click="closeMapModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Карта: {{ problem?.address }}</h3>
+          <button class="modal-close" @click="closeMapModal">×</button>
+        </div>
+        <div class="modal-body">
+          <img 
+            v-if="largeMapUrl"
+            :src="largeMapUrl" 
+            :alt="'Карта: ' + problem?.address"
+            class="modal-map-image"
+            @error="handleMapError"
+          />
+          <div v-else class="map-error">
+            Не удалось загрузить карту
+          </div>
+          <div class="modal-actions">
+            <a 
+              v-if="problem?.address"
+              :href="`https://yandex.ru/maps/?text=${encodeURIComponent(problem.address)}`" 
+              target="_blank" 
+              class="btn-external-map">
+              Открыть в Яндекс Картах
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -432,11 +519,75 @@ const mapUrl = computed(() => {
   gap: 15px;
 }
 
+.image-container {
+  position: relative;
+  width: 100%;
+}
+
 .problem-image {
   width: 100%;
   border-radius: 8px;
   object-fit: cover;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-navigation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.nav-button {
+  pointer-events: all;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 0 10px;
+  transition: background-color 0.3s;
+}
+
+.nav-button:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.image-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background-color: #ccc;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.indicator.active {
+  background-color: #2c6c9a;
+}
+
+.indicator:hover {
+  background-color: #999;
 }
 
 .author-block {
@@ -858,5 +1009,98 @@ const mapUrl = computed(() => {
 
 .error {
   color: #f44336;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #000;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: #000;
+}
+
+.modal-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-map-image {
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.map-error {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.modal-actions {
+  padding: 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-external-map {
+  padding: 10px 20px;
+  background-color: #2c6c9a;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.btn-external-map:hover {
+  background-color: #1d4e6f;
 }
 </style>

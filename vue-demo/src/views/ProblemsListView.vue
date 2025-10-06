@@ -33,10 +33,6 @@ const getProblemType = computed(() => {
    return undefined
   if (selectedProblemType.value !== null)
     return selectedProblemType.value
-  if (['admin', 'mod'].includes(userStore.user.role))
-    return PROBLEM_TYPES.MODERATION
-  if (userStore.user.role === 'gov')
-    return PROBLEM_TYPES.PENDING
   return undefined
 })
 
@@ -89,9 +85,9 @@ const pageTitle = computed(() => {
   {
     case 'mod':
     case 'admin':
-      return 'Проблемы на модерации'
+      return 'Все проблемы'
     case 'gov':
-      return 'Проблемы для решения'
+      return 'Все проблемы'
     default:
       return 'Список проблем'
   }
@@ -99,7 +95,8 @@ const pageTitle = computed(() => {
 
 const allProblems = computed(() => {
   if (!data.value || !data.value.pages) return []
-  return data.value.pages.flatMap(page => page.problems || [])
+  const allProblems = data.value.pages.flatMap(page => page.problems || [])
+  return allProblems.filter(problem => problem.status !== 'solved')
 })
 
 const hasProblems = computed(() => {

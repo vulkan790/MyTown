@@ -40,13 +40,6 @@ const MAX_FILE_COUNT = 5
 const MAX_TOTAL_SIZE_MB = 20
 const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
 
-const mapPreviewUrl = computed(() => {
-  if (form.value.addressUri) {
-    return getStaticMapUrl(form.value.addressUri, 400, 200, 15)
-  }
-  return ''
-})
-
 const isValidAddress = computed(() => {
   return form.value.addressUri && form.value.addressDisplay
 })
@@ -56,21 +49,24 @@ const hasAddressInput = computed(() => {
 })
 
 const handleFileUpload = (event) => {
-  if (!isLoggedIn.value) {
+  if (!isLoggedIn.value) 
+  {
     router.replace('/login')
     return
   }
 
   const newFiles = Array.from(event.target.files)
   
-  if (files.value.length + newFiles.length > MAX_FILE_COUNT) {
+  if (files.value.length + newFiles.length > MAX_FILE_COUNT) 
+  {
     errorMessage.value = `Максимум ${MAX_FILE_COUNT} файлов`
     event.target.value = ''
     return
   }
 
   const totalSize = [...files.value, ...newFiles].reduce((acc, file) => acc + file.size, 0)
-  if (totalSize > MAX_TOTAL_SIZE_BYTES) {
+  if (totalSize > MAX_TOTAL_SIZE_BYTES) 
+  {
     errorMessage.value = `Общий размер не должен превышать ${MAX_TOTAL_SIZE_MB}MB`
     event.target.value = ''
     return
@@ -87,7 +83,8 @@ const handleFileUpload = (event) => {
   
   const invalidFiles = newFiles.filter(file => !validTypes.includes(file.type))
   
-  if (invalidFiles.length > 0) {
+  if (invalidFiles.length > 0) 
+  {
     const invalidNames = invalidFiles.map(f => f.name).join(', ')
     errorMessage.value = `Недопустимые форматы файлов: ${invalidNames}`
     event.target.value = ''
@@ -108,7 +105,8 @@ const formatFileSize = (bytes) => {
   let size = bytes
   let unitIndex = 0
   
-  while (size >= 1024 && unitIndex < units.length - 1) {
+  while (size >= 1024 && unitIndex < units.length - 1) 
+  {
     size /= 1024
     unitIndex++
   }
@@ -117,20 +115,25 @@ const formatFileSize = (bytes) => {
 }
 
 const uploadFiles = async () => {
-  if (!isLoggedIn.value) {
+  if (!isLoggedIn.value) 
+  {
     router.replace('/login')
     return []
   }
   
   const imageIds = []
-  for (const file of files.value) {
+  for (const file of files.value) 
+  {
     const formData = new FormData()
     formData.append('file', file)
     
-    try {
+    try 
+    {
       const response = await uploadProblemImage(formData, token.value)
       imageIds.push(response.id)
-    } catch (error) {
+    } 
+    catch (error) 
+    {
       errorMessage.value = 'Ошибка загрузки файла: ' + error.message
       throw error
     }
@@ -139,7 +142,8 @@ const uploadFiles = async () => {
 }
 
 const fetchAddressSuggestions = debounce(async (query) => {
-  if (!query.trim() || !isLoggedIn.value) {
+  if (!query.trim() || !isLoggedIn.value) 
+  {
     addressSuggestions.value = []
     showSuggestions.value = false
     showLoading.value = false
@@ -148,21 +152,29 @@ const fetchAddressSuggestions = debounce(async (query) => {
   
   showLoading.value = true
   
-  try {
+  try 
+  {
     const suggestions = await getAddressSuggestions(query, token.value)
     addressSuggestions.value = suggestions || []
     showSuggestions.value = suggestions.length > 0
-  } catch (error) {
-    if (error.message === 'Authorization required') {
+  } 
+  catch (error) 
+  {
+    if (error.message === 'Authorization required') 
+    {
       authStore.removeToken()
       router.push('/login')
-    } else {
+    } 
+    else 
+    {
       console.error('Ошибка получения подсказок:', error)
       errorMessage.value = 'Ошибка получения подсказок адреса'
     }
     addressSuggestions.value = []
     showSuggestions.value = false
-  } finally {
+  } 
+  finally 
+  {
     showLoading.value = false
   }
 }, 300)
@@ -175,17 +187,18 @@ const selectAddress = (suggestion) => {
 }
 
 const onClickOutside = (e) => {
-  if (!e.target.closest('.address-autocomplete')) {
+  if (!e.target.closest('.address-autocomplete'))
     showSuggestions.value = false
-  }
 }
 
 onMounted(() => document.addEventListener('click', onClickOutside))
 onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
 const handleSubmit = async () => {
-  try {
-    if (!isLoggedIn.value) {
+  try 
+  {
+    if (!isLoggedIn.value) 
+    {
       router.replace('/login')
       return
     }
@@ -193,15 +206,12 @@ const handleSubmit = async () => {
     isSubmitting.value = true
     errorMessage.value = ''
 
-    if (!form.value.title.trim()) {
+    if (!form.value.title.trim())
       throw new Error('Введите название проблемы')
-    }
-    if (!form.value.addressUri) {
+    if (!form.value.addressUri)
       throw new Error('Выберите адрес из предложенных вариантов')
-    }
-    if (!form.value.description.trim()) {
+    if (!form.value.description.trim())
       throw new Error('Введите описание проблемы')
-    }
 
     const imageIds = await uploadFiles()
     
@@ -214,21 +224,27 @@ const handleSubmit = async () => {
 
     const response = await createProblem(problemData, token.value)
     
-    if (!response?.id) {
+    if (!response?.id)
       throw new Error('Ошибка создания проблемы: неверный ответ сервера')
-    }
     
     router.push({ name: 'problem', params: { id: response.id } })
     
-  } catch (error) {
-    if (error.message === 'Authorization required') {
+  } 
+  catch (error) 
+  {
+    if (error.message === 'Authorization required') 
+    {
       authStore.removeToken()
       router.replace('/login')
-    } else {
+    } 
+    else 
+    {
       console.error('Full error:', error)
       errorMessage.value = error.message || 'Произошла ошибка при создании проблемы'
     }
-  } finally {
+  } 
+  finally 
+  {
     isSubmitting.value = false
   }
 }
@@ -287,17 +303,6 @@ const handleSubmit = async () => {
               
               <div v-if="hasAddressInput && !showSuggestions && !isValidAddress" class="address-warning">
                 Выберите адрес из списка
-              </div>
-
-              <div v-if="mapPreviewUrl" class="map-preview">
-                <img 
-                  :src="mapPreviewUrl" 
-                  alt="Предпросмотр карты"
-                  class="preview-map"
-                />
-                <div class="preview-overlay">
-                  <span>Предпросмотр местоположения</span>
-                </div>
               </div>
             </div>
           </div>
@@ -469,32 +474,6 @@ textarea {
   padding: 8px 0;
   color: #f44336;
   font-size: 12px;
-}
-
-.map-preview {
-  position: relative;
-  margin-top: 10px;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.preview-map {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  display: block;
-}
-
-.preview-overlay {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #000;
 }
 
 .file-upload-group {
