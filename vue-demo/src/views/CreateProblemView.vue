@@ -348,8 +348,8 @@ const handleSubmit = async () => {
               </div>
               <div class="file-requirements">
                 <span>Допустимые форматы: PNG, JPEG, WebP, GIF, MP4, AVI, MOV, WebM</span>
-                <span>Максимум: {{ MAX_FILE_COUNT }} файлов (общий размер до {{ MAX_TOTAL_SIZE_MB }}MB)</span>
-                <span>Максимальный размер одного файла: {{ MAX_SINGLE_FILE_SIZE_MB }}MB</span>
+                <span>Максимум: {{ MAX_FILE_COUNT }} файлов (общий размер до {{ MAX_TOTAL_SIZE_MB }}KB)</span>
+                <span>Максимальный размер одного файла: {{ MAX_SINGLE_FILE_SIZE_MB }}KB</span>
               </div>
             </div>
           </div>
