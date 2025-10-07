@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem, updateProblemStatus, getStaticMapForAddress } from '@/api/client'
+import { getProblemById, moderateProblem, addVoteToProblem, addCommentToProblem, updateProblemStatus, getStaticMapByCoords, getYandexMapsUrl } from '@/api/client'
 import AppHeader from '@/components/AppHeader.vue'
 import { useQuery, useMutation } from '@tanstack/vue-query'
 import { useUser } from '@/api/useUser'
@@ -60,30 +60,28 @@ const statusMutation = useMutation({
 })
 
 const openYandexMaps = () => {
-  if (!problem.value?.address) {
-    alert('Адрес не указан')
+  if (!problem.value?.latitude || !problem.value?.longitude) {
+    alert('Координаты не указаны')
     return
   }
   
-  const encodedAddress = encodeURIComponent(problem.value.address)
-  window.open(`https://yandex.ru/maps/?text=${encodedAddress}`, '_blank')
+  window.open(getYandexMapsUrl(problem.value.latitude, problem.value.longitude), '_blank')
 }
 
 const getMapUrl = () => {
-  if (!problem.value?.address) return ''
+  if (!problem.value?.latitude || !problem.value?.longitude) return ''
   
-  const encodedAddress = encodeURIComponent(problem.value.address)
-  return `https://yandex.ru/map-widget/v1/?text=${encodedAddress}`
+  return getYandexMapsUrl(problem.value.latitude, problem.value.longitude)
 }
 
 const getStaticMapImageUrl = () => {
-  if (!problem.value?.address) return ''
-  return getStaticMapForAddress(problem.value.address, 600, 200, 15)
+  if (!problem.value?.latitude || !problem.value?.longitude) return ''
+  return getStaticMapByCoords(problem.value.latitude, problem.value.longitude, 600, 200, 15)
 }
 
 const openMapModal = () => {
-  if (!problem.value?.address) {
-    alert('Адрес не указан')
+  if (!problem.value?.latitude || !problem.value?.longitude) {
+    alert('Координаты не указаны')
     return
   }
   showMapModal.value = true
@@ -247,16 +245,16 @@ const hasMultipleImages = computed(() => {
   return problem.value?.images && problem.value.images.length > 1
 })
 
+const hasCoordinates = computed(() => {
+  return problem.value?.latitude && problem.value?.longitude
+})
+
 const mapUrl = computed(() => {
   return getMapUrl()
 })
 
 const staticMapImageUrl = computed(() => {
   return getStaticMapImageUrl()
-})
-
-const hasAddress = computed(() => {
-  return problem.value?.address && problem.value.address.trim() !== ''
 })
 </script>
 
@@ -277,7 +275,7 @@ const hasAddress = computed(() => {
         <div class="problem-page">
           <div class="problem-layout">
             <div class="left-column">
-              <div class="map-block" v-if="hasAddress">
+              <div class="map-block" v-if="hasCoordinates">
                 <div class="map-preview">
                   <img
                     v-if="staticMapImageUrl"
@@ -301,7 +299,7 @@ const hasAddress = computed(() => {
               </div>
 
               <div v-else class="no-map-block">
-                <p>Адрес не указан</p>
+                <p>Координаты не указаны</p>
               </div>
               
               <div v-if="problem.images && problem.images.length" class="images-block">
@@ -353,7 +351,7 @@ const hasAddress = computed(() => {
               <div class="address-with-map">
                 <p class="text-address">{{ problem.address || 'Адрес не указан' }}</p>
                 <button 
-                  v-if="hasAddress" 
+                  v-if="hasCoordinates" 
                   @click="openMapModal" 
                   class="show-map-btn">
                   Показать на карте
@@ -362,7 +360,7 @@ const hasAddress = computed(() => {
                   v-else 
                   disabled 
                   class="show-map-btn disabled">
-                  Адрес не указан
+                  Координаты не указаны
                 </button>
               </div>
 
@@ -508,7 +506,7 @@ const hasAddress = computed(() => {
         </div>
         <div class="modal-body">
           <iframe
-            v-if="hasAddress"
+            v-if="hasCoordinates"
             :src="mapUrl"
             width="100%"
             height="400"
@@ -517,11 +515,11 @@ const hasAddress = computed(() => {
             :title="'Карта: ' + problem?.address"
           ></iframe>
           <div v-else class="map-error">
-            Адрес не указан
+            Координаты не указаны
           </div>
           <div class="modal-actions">
             <button 
-              v-if="hasAddress" 
+              v-if="hasCoordinates" 
               @click="openYandexMaps" 
               class="btn-external-map">
               Открыть в Яндекс Картах

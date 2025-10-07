@@ -42,6 +42,8 @@ export const PROBLEM_TYPES = {
  * @property {string} title
  * @property {string} description
  * @property {string} address
+ * @property {number} latitude
+ * @property {number} longitude
  * @property {string[]} images
  * @property {Status} status
  * @property {number} votes
@@ -429,34 +431,34 @@ export const getFullUrl = (url) => {
 }
 
 /**
- * Get static map image from Yandex Maps using geo URI
- * @param {string} uri - URI from address suggestions (ymapsbm1://geo?data=...)
+ * Get static map using coordinates
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
  * @param {number} width - Image width
  * @param {number} height - Image height
  * @param {number} zoom - Zoom level (1-17)
  * @returns {string} - Map image URL
  */
-export const getStaticMapUrl = (uri, width = 600, height = 400, zoom = 15) => {
-  if (!uri) 
+export const getStaticMapByCoords = (lat, lng, width = 600, height = 400, zoom = 15) => {
+  if (!lat || !lng) 
     return '';
   
-  try 
-  {
-    const urlParams = new URLSearchParams(uri.replace('ymapsbm1://geo?', ''));
-    const data = urlParams.get('data');
-    if (data) 
-    {
-      const apiKey = '085624b9-22de-4b17-b432-f8a35fb66144';
-      return `https://static-maps.yandex.ru/v1?apikey=${apiKey}&size=${width},${height}&zoom=${zoom}&lang=ru_RU&pt=${encodeURIComponent(data)}`;
-    }
-  } 
-  catch (error) 
-  {
-    console.error('Error parsing map URI:', error);
-  }
-  
-  return '';
-}
+  const apiKey = '085624b9-22de-4b17-b432-f8a35fb66144';
+  const pt = `${lng},${lat}`;
+  return `https://static-maps.yandex.ru/v1?apikey=${apiKey}&size=${width},${height}&zoom=${zoom}&lang=ru_RU&pt=${pt},pm2grl`;
+};
+
+/**
+ * Get Yandex Maps URL for coordinates
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {string} - Yandex Maps URL
+ */
+export const getYandexMapsUrl = (lat, lng) => {
+  if (!lat || !lng) 
+    return '';
+  return `https://yandex.ru/maps/?pt=${lng},${lat}&z=15&l=map`;
+};
 
 /**
  * Get static map for address string (fallback method)
@@ -476,7 +478,8 @@ export const getStaticMapForAddress = (address, width = 600, height = 400, zoom 
 /**
  * Get static map with multiple parameters for more control
  * @param {Object} params
- * @param {string} [params.uri] - Geo URI from suggestions
+ * @param {number} [params.lat] - Latitude
+ * @param {number} [params.lng] - Longitude
  * @param {string} [params.address] - Address string
  * @param {number} [params.width=600]
  * @param {number} [params.height=400]
@@ -486,7 +489,8 @@ export const getStaticMapForAddress = (address, width = 600, height = 400, zoom 
  */
 export const getStaticMap = (params = {}) => {
   const {
-    uri,
+    lat,
+    lng,
     address,
     width = 600,
     height = 400,
@@ -497,23 +501,15 @@ export const getStaticMap = (params = {}) => {
   const apiKey = '085624b9-22de-4b17-b432-f8a35fb66144';
   let url = `https://static-maps.yandex.ru/v1?apikey=${apiKey}&size=${width},${height}&zoom=${zoom}&lang=ru_RU`;
   
-  if (uri) 
+  if (lat && lng) 
   {
-    try 
-    {
-      const urlParams = new URLSearchParams(uri.replace('ymapsbm1://geo?', ''));
-      const data = urlParams.get('data');
-      if (data)
-        url += `&pt=${encodeURIComponent(data)}`;
-    } 
-    catch (error) 
-    {
-      console.error('Error parsing URI:', error);
-    }
-  } 
+    const point = pt || `${lng},${lat},pm2grl`;
+    url += `&pt=${encodeURIComponent(point)}`;
+  }
   else if (pt)
     url += `&pt=${encodeURIComponent(pt)}`;
   else if (address)
     url += `&text=${encodeURIComponent(address)}`;
+  
   return url;
 }

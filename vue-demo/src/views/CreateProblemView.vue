@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useAuth } from '@/api/useAuth'
 import { useUser } from '@/api/useUser'
-import { createProblem, uploadProblemImage, getAddressSuggestions, getStaticMapUrl } from '@/api/client'
+import { createProblem, uploadProblemImage, getAddressSuggestions } from '@/api/client'
 import { debounce } from 'lodash-es'
 import AppHeader from '@/components/AppHeader.vue'
 

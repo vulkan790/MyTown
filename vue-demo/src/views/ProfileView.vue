@@ -215,26 +215,30 @@ const handleFileUpload = async (event) => {
   position: relative;
   width: 120px;
   height: 120px;
-  border-radius: 50%;
+  border-radius: 12px;
   border: 3px solid #f0f0f0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .user-logo {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; 
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .default-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover; 
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
   padding: 0;
-  background: #f8f9fa;
-  box-sizing: border-box;
+  background: transparent;
 }
 
 .upload-overlay {
@@ -247,7 +251,7 @@ const handleFileUpload = async (event) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 12px;
   z-index: 10;
 }
 
@@ -324,5 +328,66 @@ const handleFileUpload = async (event) => {
   font-size: 24px;
   font-weight: 600;
   color: #333;
+}
+
+.profile-details {
+  margin-bottom: 24px;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.detail-value {
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.detail-item {
+  margin-bottom: 16px;
+}
+
+.problem-count {
+  font-size: 18px;
+  font-weight: 600;
+  color: #3786BE;
+}
+
+.btn-report {
+  display: inline-block;
+  background: #3786BE;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  text-decoration: none;
+  text-align: center;
+  transition: background-color 0.2s;
+}
+
+.btn-report:hover {
+  background: #2c6b9d;
+}
+
+.problems-section {
+  margin-top: 32px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.all__problems-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.all__problems-list-item {
+  margin-bottom: 16px;
 }
 </style>
