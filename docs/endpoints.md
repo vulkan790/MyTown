@@ -88,7 +88,8 @@ query (всё, что идет после вопроса в конце URL), pat
   "id": 123,
   "title": "Трубы прорвало",
   "description": "Ужас, просто ужас, ассинезатор не справляется, помогите!",
-  "address": "ул. Пушкина, д. Колотушкина",
+  "latitude": 8.0085,
+  "longitude": -13.37420,
   "images": ["https://host.com/uploads/image.jpg"],
   "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved"
   "votes": 123, // could be negative (?)
@@ -139,7 +140,8 @@ query (всё, что идет после вопроса в конце URL), pat
     "id": 123,
     "title": "Трубы прорвало",
     "description": "Ужас, просто ужас, ассинезатор не справляется, помогите!",
-    "address": "ул. Пушкина, д. Колотушкина",
+    "latitude": 8.0085,
+    "longitude": -13.37420,
     "images": ["https://host.com/uploads/image.jpg"],
     "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved"
     "votes": 123, // could be negative (?)
@@ -278,7 +280,8 @@ query (всё, что идет после вопроса в конце URL), pat
       "id": 123,
       "title": "Трубы прорвало",
       "description": "Ужас, просто ужас, ассинезатор не справляется, помогите!",
-      "address": "ул. Пушкина, д. Колотушкина",
+      "latitude": 8.0085,
+      "longitude": -13.37420,
       "images": ["https://host.com/uploads/image.jpg"],
       "status": "wait_for_solve", // "wait_for_solve" | "solving" | "solved" | "rejected" | "on_moderation"
       "votes": 123, // could be negative (?)
