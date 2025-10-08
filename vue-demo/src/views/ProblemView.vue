@@ -252,30 +252,6 @@ const staticMapImageUrl = computed(() => {
         <div class="problem-page">
           <div class="problem-layout">
             <div class="left-column">
-              <div class="map-block" v-if="hasCoordinates">
-                <div class="map-preview">
-                  <img
-                    v-if="staticMapImageUrl"
-                    :src="staticMapImageUrl"
-                    :alt="'Карта: ' + problem.address"
-                    class="static-map-image"
-                    @click="openYandexMaps"
-                  />
-                  <div v-else class="map-placeholder">
-                    Карта недоступна
-                  </div>
-                </div>
-                <div class="map-overlay">
-                  <button @click="openYandexMaps" class="map-link">
-                    Открыть в Яндекс Картах
-                  </button>
-                </div>
-              </div>
-
-              <div v-else class="no-map-block">
-                <p>Координаты не указаны</p>
-              </div>
-              
               <div v-if="problem.images && problem.images.length" class="images-block">
                 <div class="image-container">
                   <img 
@@ -322,8 +298,24 @@ const staticMapImageUrl = computed(() => {
 
             <div class="right-column">
               <h2 class="title-address">Адрес</h2>
+              <div class="map-block" v-if="hasCoordinates">
+                <div class="map-preview">
+                  <img
+                    v-if="staticMapImageUrl"
+                    :src="staticMapImageUrl"
+                    :alt="'Карта: ' + problem.address"
+                    class="static-map-image"
+                    @click="openYandexMaps"
+                  />
+                  <div v-else class="map-placeholder">
+                    Карта недоступна
+                  </div>
+                </div>
+              </div>
+              <div v-else class="no-map-block">
+                <p>Координаты не указаны</p>
+              </div>
               <div class="address-with-map">
-                <p class="text-address">{{ problem.address || 'Адрес не указан' }}</p>
                 <button 
                   v-if="hasCoordinates" 
                   @click="openYandexMaps" 
