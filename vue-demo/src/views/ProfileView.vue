@@ -6,7 +6,8 @@ import AppHeader from '@/components/AppHeader.vue'
 import ProblemInfo from '@/components/ProblemCard.vue'
 import { uploadUserAvatar } from '@/api/client'
 
-const { user, refetch } = storeToRefs(useUser())
+const { user } = storeToRefs(useUser())
+const userStore = useUser()
 const fileInput = ref(null)
 const isUploading = ref(false)
 const uploadError = ref(null)
@@ -80,10 +81,9 @@ const handleFileUpload = async (event) => {
     const formData = new FormData()
     formData.append('file', file)
     const result = await uploadUserAvatar(formData)
-    if (user.value)
-      user.value.avatarUrl = result.avatarUrl
-    if (refetch.value)
-      await refetch.value()
+    
+    await userStore.fetchUser()
+    
     if (fileInput.value)
       fileInput.value.value = ''
     alert('Аватар успешно обновлен!')

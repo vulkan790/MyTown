@@ -439,7 +439,7 @@ export const getFullUrl = (url) => {
  * @param {number} zoom - Zoom level (1-17)
  * @returns {string} - Map image URL
  */
-export const getStaticMapByCoords = (lat, lng, width = 600, height = 400, zoom = 15) => {
+export const getStaticMapByCoords = (lat, lng, width = 600, height = 800, zoom = 15) => {
   if (!lat || !lng) 
     return '';
   

@@ -13,7 +13,6 @@ const problemId = ref(route.params.id)
 const voteValue = ref(0)
 const newComment = ref('')
 const currentImageIndex = ref(0) 
-const showMapModal = ref(false) 
 
 const {
   data: problem,
@@ -68,27 +67,9 @@ const openYandexMaps = () => {
   window.open(getYandexMapsUrl(problem.value.latitude, problem.value.longitude), '_blank')
 }
 
-const getMapUrl = () => {
-  if (!problem.value?.latitude || !problem.value?.longitude) return ''
-  
-  return getYandexMapsUrl(problem.value.latitude, problem.value.longitude)
-}
-
 const getStaticMapImageUrl = () => {
   if (!problem.value?.latitude || !problem.value?.longitude) return ''
-  return getStaticMapByCoords(problem.value.latitude, problem.value.longitude, 600, 200, 15)
-}
-
-const openMapModal = () => {
-  if (!problem.value?.latitude || !problem.value?.longitude) {
-    alert('Координаты не указаны')
-    return
-  }
-  showMapModal.value = true
-}
-
-const closeMapModal = () => {
-  showMapModal.value = false
+  return getStaticMapByCoords(problem.value.latitude, problem.value.longitude, 600, 800, 15)
 }
 
 const statusNames = {
@@ -249,10 +230,6 @@ const hasCoordinates = computed(() => {
   return problem.value?.latitude && problem.value?.longitude
 })
 
-const mapUrl = computed(() => {
-  return getMapUrl()
-})
-
 const staticMapImageUrl = computed(() => {
   return getStaticMapImageUrl()
 })
@@ -282,16 +259,13 @@ const staticMapImageUrl = computed(() => {
                     :src="staticMapImageUrl"
                     :alt="'Карта: ' + problem.address"
                     class="static-map-image"
-                    @click="openMapModal"
+                    @click="openYandexMaps"
                   />
                   <div v-else class="map-placeholder">
                     Карта недоступна
                   </div>
                 </div>
                 <div class="map-overlay">
-                  <button @click="openMapModal" class="map-link">
-                    Показать на карте
-                  </button>
                   <button @click="openYandexMaps" class="map-link">
                     Открыть в Яндекс Картах
                   </button>
@@ -352,9 +326,9 @@ const staticMapImageUrl = computed(() => {
                 <p class="text-address">{{ problem.address || 'Адрес не указан' }}</p>
                 <button 
                   v-if="hasCoordinates" 
-                  @click="openMapModal" 
+                  @click="openYandexMaps" 
                   class="show-map-btn">
-                  Показать на карте
+                  Открыть в Яндекс Картах
                 </button>
                 <button 
                   v-else 
@@ -496,37 +470,6 @@ const staticMapImageUrl = computed(() => {
       <template v-else>
         <div class="not-found">Проблема не найдена</div>
       </template>
-    </div>
-
-    <div v-if="showMapModal" class="modal-overlay" @click="closeMapModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>Карта: {{ problem?.address }}</h3>
-          <button class="modal-close" @click="closeMapModal">×</button>
-        </div>
-        <div class="modal-body">
-          <iframe
-            v-if="hasCoordinates"
-            :src="mapUrl"
-            width="100%"
-            height="400"
-            frameborder="0"
-            class="yandex-map-iframe"
-            :title="'Карта: ' + problem?.address"
-          ></iframe>
-          <div v-else class="map-error">
-            Координаты не указаны
-          </div>
-          <div class="modal-actions">
-            <button 
-              v-if="hasCoordinates" 
-              @click="openYandexMaps" 
-              class="btn-external-map">
-              Открыть в Яндекс Картах
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </main>
 </template>
@@ -1143,100 +1086,5 @@ const staticMapImageUrl = computed(() => {
 
 .error {
   color: #f44336;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  max-width: 800px;
-  width: 100%;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #000;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-close:hover {
-  color: #000;
-}
-
-.modal-body {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.yandex-map-iframe {
-  width: 100%;
-  height: 400px;
-  border: none;
-}
-
-.map-error {
-  padding: 40px;
-  text-align: center;
-  color: #666;
-}
-
-.modal-actions {
-  padding: 20px;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: center;
-}
-
-.btn-external-map {
-  padding: 10px 20px;
-  background-color: #2c6c9a;
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.btn-external-map:hover {
-  background-color: #1d4e6f;
 }
 </style>
