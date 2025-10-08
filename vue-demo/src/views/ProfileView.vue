@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useUser } from '@/api/useUser'
 import AppHeader from '@/components/AppHeader.vue'
 import ProblemInfo from '@/components/ProblemCard.vue'
-import { uploadUserAvatar } from '@/api/client'
+import { uploadUserAvatar, getCurrentUser } from '@/api/client'
 
 const { user } = storeToRefs(useUser())
 const userStore = useUser()
@@ -82,7 +82,13 @@ const handleFileUpload = async (event) => {
     formData.append('file', file)
     const result = await uploadUserAvatar(formData)
     
-    await userStore.fetchUser()
+    if (userStore.refetch)
+      await userStore.refetch()
+    else 
+    {
+      const freshUserData = await getCurrentUser()
+      user.value = freshUserData
+    }
     
     if (fileInput.value)
       fileInput.value.value = ''
@@ -162,16 +168,7 @@ const handleFileUpload = async (event) => {
             
             <div class="detail-item">
               <div class="detail-label">Почта</div>
-              <div class="detail-value">Электронная почта: {{ user.email }}</div>
-            </div>
-            
-            <div class="detail-item">
-              <div class="detail-label" v-if="!isGov">
-                Всего отправленных проблем
-              </div>
-              <div class="problem-count" v-if="!isGov">
-                {{ user.problems?.length || 0 }}
-              </div>
+              <div class="detail-value">{{ user.email }}</div>
             </div>
           </div>
           
