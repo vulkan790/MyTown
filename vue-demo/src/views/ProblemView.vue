@@ -69,7 +69,7 @@ const openYandexMaps = () => {
 
 const getStaticMapImageUrl = () => {
   if (!problem.value?.latitude || !problem.value?.longitude) return ''
-  return getStaticMapByCoords(problem.value.latitude, problem.value.longitude, 600, 800, 15)
+  return getStaticMapByCoords(problem.value.latitude, problem.value.longitude, 600, 400, 19)
 }
 
 const statusNames = {
@@ -139,8 +139,6 @@ const handleAddComment = () => {
 const getAvatarUrl = (avatarUrl) => {
   if (!avatarUrl)
    return fallbackAvatar
-  if (avatarUrl.startsWith('/'))
-    return `${import.meta.env.VITE_API_URL || ''}${avatarUrl}`
   
   return avatarUrl
 }

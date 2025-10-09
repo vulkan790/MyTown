@@ -39,10 +39,7 @@ const solvingProblemsCount = computed(() => solvingProblems.value.length)
 
 const getAvatarUrl = (avatarUrl) => {
   if (!avatarUrl)
-   return new URL('@/images/Profile.svg', import.meta.url).href
-  
-  if (avatarUrl.startsWith('/'))
-    return `${import.meta.env.VITE_API_URL || ''}${avatarUrl}`
+    return new URL('@/images/Profile.svg', import.meta.url).href
   
   return avatarUrl
 }

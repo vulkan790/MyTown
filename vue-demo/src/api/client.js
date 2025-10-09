@@ -445,7 +445,7 @@ export const getStaticMapByCoords = (lat, lng, width = 600, height = 800, zoom =
   
   const apiKey = '085624b9-22de-4b17-b432-f8a35fb66144';
   const pt = `${lng},${lat}`;
-  return `https://static-maps.yandex.ru/v1?apikey=${apiKey}&size=${width},${height}&zoom=${zoom}&lang=ru_RU&pt=${pt},pm2grl`;
+  return `https://static-maps.yandex.ru/v1?apikey=${apiKey}&size=${width},${height}&zoom=${zoom}&lang=ru_RU&ll=${pt}&pt=${pt},pm2grl`;
 };
 
 /**

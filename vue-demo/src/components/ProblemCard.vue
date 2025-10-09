@@ -83,9 +83,6 @@ const getAvatarUrl = (author) => {
   if (!author?.avatarUrl)
    return ClassicAvatar
   
-  if (author.avatarUrl.startsWith('/'))
-    return `${import.meta.env.VITE_API_URL || ''}${author.avatarUrl}`
-  
   return author.avatarUrl
 }
 
